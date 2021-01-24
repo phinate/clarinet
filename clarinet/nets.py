@@ -20,7 +20,7 @@ class _BayesNet:
 @struct.dataclass
 class BayesNet(_BayesNet):
     @singledispatchmethod
-    def add_node(self, node) -> _BayesNet:
+    def add_node(self, node) -> _BayesNet:  # type: ignore  # noqa
         raise NotImplementedError(
             f"Type '{type(node)}' of node was not recognised")
 
