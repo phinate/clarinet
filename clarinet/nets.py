@@ -5,22 +5,21 @@ from typing import Any
 
 from functools import singledispatchmethod
 from dataclasses import asdict
+from dataclasses import dataclass
 
-from flax import struct  # type: ignore
-
-from .nodes import Node
+from .nodes import Node, CategoricalNode
 from .validation import validate_dict
 
 
-@struct.dataclass
+@dataclass
 class _BayesNet:
     nodes: Dict[str, Node]
 
 
-@struct.dataclass
+@dataclass
 class BayesNet(_BayesNet):
     @singledispatchmethod
-    def add_node(self, node) -> _BayesNet:  # type: ignore  # noqa
+    def add_node(self, node) -> _BayesNet:  # type: ignore # noqa
         raise NotImplementedError(
             f"Type '{type(node)}' of node was not recognised")
 
@@ -35,23 +34,22 @@ class BayesNet(_BayesNet):
             dct[child]["parents"].append(name)
         for parent in node.parents:
             dct[parent]["children"].append(name)
-        return net_from_dict(dct)  # type: ignore  # noqa
+        return net_from_dict(dct)
 
 
 def net_from_dict(network_dict: Dict[str, Dict[str, Any]]) -> BayesNet:
     # validation step
     # TODO: jsonschema
     validate_dict(network_dict)
-    nodes = {}
+    nodes: Dict[str, Node] = {}
     for i, items in enumerate(network_dict.items()):
         name, node_dict = items
         if "name" in node_dict.keys():
             del node_dict["name"]
         if "categories" in node_dict.keys():
-            node = CategoricalNode(name, **node_dict)  # type: ignore  # noqa
+            nodes[name] = CategoricalNode(name, **node_dict)
         else:
-            node = Node(name, **node_dict)  # type: ignore  # noqa
-        nodes[name] = node
+            nodes[name] = Node(name, **node_dict)
         # display_text = node.display_text or name  # TODO daft
 
-    return BayesNet(nodes)  # type: ignore  # noqa
+    return BayesNet(nodes)

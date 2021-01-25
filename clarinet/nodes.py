@@ -13,57 +13,59 @@ __all__ = [
 from typing import List
 from typing import Any
 
+from dataclasses import dataclass
+from dataclasses import field
+
 import jax.numpy as jnp
 from jax.interpreters.xla import _DeviceArray as JaxArray  # type: ignore
-from flax import struct  # type: ignore
 
 
 # funky inheritance pattern to keep defaults seperated from required args. see:
 # https://stackoverflow.com/questions/51575931/class-inheritance-in-python-3-7-dataclasses
-@struct.dataclass
+@dataclass
 class _Node:
-    name: str = struct.field(pytree_node=False)
+    name: str
 
 
-@struct.dataclass
+@dataclass
 class _NodeDefaults:
-    parents: List[str] = struct.field(pytree_node=False, default_factory=list)
-    children: List[str] = struct.field(pytree_node=False, default_factory=list)
-    display_text: str = struct.field(pytree_node=False, default="")
+    parents: List[str] = field(default_factory=list)
+    children: List[str] = field(default_factory=list)
+    display_text: str = field(default="")
 
 
-@struct.dataclass
+@dataclass
 class Node(_NodeDefaults, _Node):
     pass
 
 
 # discrete
-@struct.dataclass
+@dataclass
 class _Discrete(_Node):
     pass
 
 
-@struct.dataclass
+@dataclass
 class _DiscreteDefaults(_NodeDefaults):
     prob_table: JaxArray = jnp.array([])
 
 
-@struct.dataclass
+@dataclass
 class DiscreteNode(Node, _DiscreteDefaults, _Discrete):
     pass
 
 
 # categorical
-@struct.dataclass
+@dataclass
 class _Categorical(_Discrete):
-    categories: List[Any] = struct.field(pytree_node=False)
+    categories: List[Any]
 
 
-@struct.dataclass
+@dataclass
 class _CategoricalDefaults(_DiscreteDefaults):
     pass
 
 
-@struct.dataclass
+@dataclass
 class CategoricalNode(DiscreteNode, _CategoricalDefaults, _Categorical):
     pass
