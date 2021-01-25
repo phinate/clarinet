@@ -11,12 +11,12 @@ from .nodes import Node, CategoricalNode
 from .validation import validate_dict
 
 
-@dataclass
+@dataclass(frozen=True)
 class _BayesNet:
     nodes: Dict[str, Node]
 
 
-@dataclass
+@dataclass(frozen=True)
 class BayesNet(_BayesNet):
     @singledispatchmethod
     def add_node(self, node) -> _BayesNet:  # type: ignore # noqa

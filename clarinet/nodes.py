@@ -22,50 +22,50 @@ from jax.interpreters.xla import _DeviceArray as JaxArray  # type: ignore
 
 # funky inheritance pattern to keep defaults seperated from required args. see:
 # https://stackoverflow.com/questions/51575931/class-inheritance-in-python-3-7-dataclasses
-@dataclass
+@dataclass(frozen=True)
 class _Node:
     name: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class _NodeDefaults:
     parents: List[str] = field(default_factory=list)
     children: List[str] = field(default_factory=list)
     display_text: str = field(default="")
 
 
-@dataclass
+@dataclass(frozen=True)
 class Node(_NodeDefaults, _Node):
     pass
 
 
 # discrete
-@dataclass
+@dataclass(frozen=True)
 class _Discrete(_Node):
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class _DiscreteDefaults(_NodeDefaults):
     prob_table: JaxArray = jnp.array([])
 
 
-@dataclass
+@dataclass(frozen=True)
 class DiscreteNode(Node, _DiscreteDefaults, _Discrete):
     pass
 
 
 # categorical
-@dataclass
+@dataclass(frozen=True)
 class _Categorical(_Discrete):
     categories: List[Any]
 
 
-@dataclass
+@dataclass(frozen=True)
 class _CategoricalDefaults(_DiscreteDefaults):
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class CategoricalNode(DiscreteNode, _CategoricalDefaults, _Categorical):
     pass
