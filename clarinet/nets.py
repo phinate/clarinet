@@ -8,7 +8,7 @@ from dataclasses import asdict
 
 from flax import struct  # type: ignore
 
-from .nodes import Node
+from .nodes import Node, CategoricalNode
 from .validation import validate_dict
 
 
