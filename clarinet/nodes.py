@@ -11,10 +11,12 @@ __all__ = [
 ]
 
 from typing import List
-from typing import Any
+from typing import Tuple
+from typing import Union
 
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import asdict
 
 import jax.numpy as jnp
 from jax.interpreters.xla import _DeviceArray as JaxArray  # type: ignore
@@ -29,14 +31,28 @@ class _Node:
 
 @dataclass(frozen=True)
 class _NodeDefaults:
-    parents: List[str] = field(default_factory=list)
-    children: List[str] = field(default_factory=list)
+    # see https://github.com/python/mypy/issues/5738 for ignore reasons
+    parents: Tuple[str] = field(default_factory=tuple)  # type: ignore # noqa
+    children: Tuple[str] = field(default_factory=tuple)  # type: ignore # noqa
     display_text: str = field(default="")
 
 
 @dataclass(frozen=True)
 class Node(_NodeDefaults, _Node):
-    pass
+    def set_parents(
+        self,
+        parents: Union[List[str], Tuple[str]],
+        keep_current: bool = True
+    ) -> _Node:
+        if keep_current:
+            current = list(self.parents)
+            new_parents = tuple(list(parents) + current)
+        else:
+            new_parents = tuple(parents)
+
+        self_dict = asdict(self)
+        self_dict['parents'] = new_parents
+        return self.__class__(**self_dict)
 
 
 # discrete
@@ -47,18 +63,24 @@ class _Discrete(_Node):
 
 @dataclass(frozen=True)
 class _DiscreteDefaults(_NodeDefaults):
-    prob_table: JaxArray = jnp.array([])
+    prob_table: Union[JaxArray, List[float]] = jnp.array([])
 
 
 @dataclass(frozen=True)
 class DiscreteNode(Node, _DiscreteDefaults, _Discrete):
-    pass
+    def make_serializable(self) -> _Discrete:
+        if isinstance(self.prob_table, list):
+            print(f"Node '{self.name}' is already serializable!")
+            return self
+        self_dict = asdict(self)
+        self_dict['prob_table'] = self_dict['prob_table'].tolist()
+        return self.__class__(**self_dict)
 
 
 # categorical
 @dataclass(frozen=True)
 class _Categorical(_Discrete):
-    categories: List[Any]
+    categories: Tuple[str]
 
 
 @dataclass(frozen=True)

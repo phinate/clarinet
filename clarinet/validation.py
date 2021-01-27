@@ -19,6 +19,8 @@ def recursive_cycle_check(
             ), f"Network has a cycle -- can cycle back to '{name}'!"
             recursive_cycle_check(name, entry["children"], network_dict)
 
+# TODO: MAKE THIS SINGLE DISPATCH for node and dict
+
 
 def validate_node(
     name: str,
@@ -32,17 +34,15 @@ def validate_node(
 
     has_parents = False
     if "parents" in node_dict.keys():
-        if node_dict["parents"] != []:
+        if node_dict["parents"] != [] and node_dict["parents"] != ():
             has_parents = True
     has_children = False
     if "children" in node_dict.keys():
-        if node_dict["children"] != []:
+        if node_dict["children"] != [] and node_dict["children"] != ():
             has_children = True
-    # print(name, has_parents,has_children)
 
     # check for isolated nodes
     if not has_parents and not has_children:
-
         in_keys = False
         for second_node_dict in network_dict.values():
             if "parents" in second_node_dict.keys():
