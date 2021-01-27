@@ -39,7 +39,7 @@ class BayesNet(_BayesNet):
                 keep_current=True
             )
         for parent in node.parents:
-            node_dct[parent] = node_dct[parent].set_parents(
+            node_dct[parent] = node_dct[parent].set_children(
                 [name],
                 keep_current=True
             )
@@ -75,8 +75,8 @@ def net_from_dict(
         # convert to tuples for immutability
         if "parents" in node_dict.keys():
             node_dict["parents"] = tuple(node_dict["parents"])
-        if "parents" in node_dict.keys():
-            node_dict["parents"] = tuple(node_dict["parents"])
+        if "children" in node_dict.keys():
+            node_dict["children"] = tuple(node_dict["children"])
         if "name" in node_dict.keys():
             del node_dict["name"]
 

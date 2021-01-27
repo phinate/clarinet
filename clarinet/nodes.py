@@ -54,6 +54,21 @@ class Node(_NodeDefaults, _Node):
         self_dict['parents'] = new_parents
         return self.__class__(**self_dict)
 
+    def set_children(
+        self,
+        children: Union[List[str], Tuple[str]],
+        keep_current: bool = True
+    ) -> _Node:
+        if keep_current:
+            current = list(self.children)
+            new_children = tuple(list(children) + current)
+        else:
+            new_children = tuple(children)
+
+        self_dict = asdict(self)
+        self_dict['children'] = new_children
+        return self.__class__(**self_dict)
+
 
 # discrete
 @dataclass(frozen=True)
