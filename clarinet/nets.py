@@ -34,9 +34,15 @@ class BayesNet(_BayesNet):
         node_dct[name] = node
         # make sure to complete arcs from their other ends
         for child in node.children:
-            node_dct[child].set_parents([name], keep_current=True)
+            node_dct[child] = node_dct[child].set_parents(
+                [name],
+                keep_current=True
+            )
         for parent in node.parents:
-            node_dct[parent].set_parents([name], keep_current=True)
+            node_dct[parent] = node_dct[parent].set_parents(
+                [name],
+                keep_current=True
+            )
         dct = nodes_as_dict(node_dct)
         validate_node(name, asdict(node), network_dict=dct)
         return net_from_dict(dct, validation=False)
