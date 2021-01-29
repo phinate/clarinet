@@ -1,8 +1,15 @@
-__all__ = ["recursive_cycle_check", "validate_node", "validate_dict"]
+__all__ = [
+    "recursive_cycle_check",
+    "validate_node",
+    "validate_model_dict",
+    "validate_modelstring"
+]
 
 from typing import List
 from typing import Dict
 from typing import Any
+
+import re
 
 from functools import partial
 
@@ -100,7 +107,7 @@ def validate_node(
         cycle_check(name, children)
 
 
-def validate_dict(network_dict: Dict[str, Dict[str, Any]]) -> None:
+def validate_model_dict(network_dict: Dict[str, Dict[str, Any]]) -> None:
     assert len(network_dict.keys()) == len(
         set(network_dict.keys())
     ), "Duplicate nodes found!"
@@ -109,3 +116,14 @@ def validate_dict(network_dict: Dict[str, Dict[str, Any]]) -> None:
 
     for name, node_dict in network_dict.items():
         node_check(name, node_dict)
+
+
+def validate_modelstring(modelstring: str) -> None:
+    assert (
+        re.fullmatch(
+            r'((\[[\w *]+\|?[\w ](:\w)*\])|(\[[\w *]+\]))+',
+            modelstring
+        )
+    ), ("Not a valid model string.\nShould be a sequence of items "
+        + "following the `bnlearn` convention: "
+        + "'[Node name|List of parent nodes]'")
