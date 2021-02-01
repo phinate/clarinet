@@ -13,6 +13,8 @@ __all__ = [
 from typing import List
 from typing import Tuple
 from typing import Union
+from typing import Dict
+from typing import Any
 
 from dataclasses import dataclass
 from dataclasses import field
@@ -69,6 +71,9 @@ class Node(_NodeDefaults, _Node):
         self_dict['children'] = new_children
         return self.__class__(**self_dict)
 
+    def as_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
 
 # discrete
 @dataclass(frozen=True)
@@ -105,4 +110,16 @@ class _CategoricalDefaults(_DiscreteDefaults):
 
 @dataclass(frozen=True)
 class CategoricalNode(DiscreteNode, _CategoricalDefaults, _Categorical):
-    pass
+    @classmethod
+    def from_node(
+        cls,
+        node: Node,
+        categories: Union[List[str], Tuple[str]],
+        prob_table: JaxArray = jnp.array([])
+    ) -> _Categorical:
+        node_dict = node.as_dict()
+        return cls(
+            **node_dict,
+            categories=tuple(categories),  # type: ignore
+            prob_table=jnp.array(prob_table)  # just in case...
+        )

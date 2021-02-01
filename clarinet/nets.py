@@ -28,6 +28,42 @@ class _BayesNetDefaults:
 @dataclass(frozen=True)
 class BayesNet(_BayesNetDefaults, _BayesNet):
 
+    @classmethod
+    def from_dict(
+        cls,
+        network_dict: Dict[str, Dict[str, Any]],
+        validation: bool = True,
+        modelstring: str = ""
+    ) -> _BayesNet:
+        # validation step
+        # TODO: jsonschema
+        if validation:
+            validate_model_dict(network_dict)
+        nodes: Dict[str, Node] = {}
+        for i, items in enumerate(network_dict.items()):
+            name, node_dict = items
+            # convert to tuples for immutability
+            if "parents" in node_dict.keys():
+                node_dict["parents"] = tuple(node_dict["parents"])
+            if "children" in node_dict.keys():
+                node_dict["children"] = tuple(node_dict["children"])
+            if "name" in node_dict.keys():
+                del node_dict["name"]
+
+            # special casing
+            if "categories" in node_dict.keys():
+                node_dict["categories"] = tuple(node_dict["categories"])
+                nodes[name] = CategoricalNode(name, **node_dict)
+            else:
+                nodes[name] = Node(name, **node_dict)
+            # display_text = node.display_text or name  # TODO daft
+
+        return cls(freeze(nodes), modelstring)
+
+    @classmethod
+    def from_modelstring(cls, modelstring: str) -> _BayesNet:
+        return cls.from_dict(modelstring_to_dict(modelstring))
+
     @singledispatchmethod
     def add_node(self, node) -> _BayesNet:  # type: ignore # noqa
         raise NotImplementedError(
@@ -52,7 +88,7 @@ class BayesNet(_BayesNetDefaults, _BayesNet):
             )
         dct = nodes_to_dict(node_dct)
         validate_node(name, asdict(node), network_dict=dct)
-        return dict_to_net(dct, validation=False)
+        return BayesNet.from_dict(dct, validation=False)
 
     def as_dict(
         self, serializable: bool = False
@@ -65,38 +101,3 @@ class BayesNet(_BayesNetDefaults, _BayesNet):
             return {'nodes': nodes_to_dict(net_copy)}
         else:
             return {'nodes': nodes_to_dict(net_copy)}
-
-
-def dict_to_net(
-    network_dict: Dict[str, Dict[str, Any]],
-    validation: bool = True,
-    modelstring: str = ""
-) -> BayesNet:
-    # validation step
-    # TODO: jsonschema
-    if validation:
-        validate_model_dict(network_dict)
-    nodes: Dict[str, Node] = {}
-    for i, items in enumerate(network_dict.items()):
-        name, node_dict = items
-        # convert to tuples for immutability
-        if "parents" in node_dict.keys():
-            node_dict["parents"] = tuple(node_dict["parents"])
-        if "children" in node_dict.keys():
-            node_dict["children"] = tuple(node_dict["children"])
-        if "name" in node_dict.keys():
-            del node_dict["name"]
-
-        # special casing
-        if "categories" in node_dict.keys():
-            node_dict["categories"] = tuple(node_dict["categories"])
-            nodes[name] = CategoricalNode(name, **node_dict)
-        else:
-            nodes[name] = Node(name, **node_dict)
-        # display_text = node.display_text or name  # TODO daft
-
-    return BayesNet(freeze(nodes))
-
-
-def modelstring_to_net(modelstring: str) -> BayesNet:
-    return dict_to_net(modelstring_to_dict(modelstring))
