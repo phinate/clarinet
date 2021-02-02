@@ -28,13 +28,13 @@ class BayesNet(BaseModel):
         keep_untouched = (singledispatchmethod,)
 
     @validator('nodes')
-    def to_frozendict(cls, dct: Dict[str, Node]) -> FrozenDict:
+    def to_frozendict(cls, dct: dict[str, Node]) -> FrozenDict:
         return freeze(dct)
 
     @classmethod
     def from_dict(
         cls,
-        network_dict: Dict[str, Dict[str, Any]],
+        network_dict: dict[str, dict[str, Any]],
         validation: bool = True,
         modelstring: str = ""
     ) -> BayesNet:
@@ -42,7 +42,7 @@ class BayesNet(BaseModel):
         # TODO: jsonschema
         if validation:
             validate_model_dict(network_dict)
-        nodes: Dict[str, Node] = {}
+        nodes: dict[str, Node] = {}
         for i, items in enumerate(network_dict.items()):
             name, node_dict = items
             # convert to tuples for immutability

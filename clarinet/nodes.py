@@ -19,20 +19,20 @@ from jax.interpreters.xla import DeviceArray  # type: ignore
 
 class Node(BaseModel):
     name: str
-    parents: Tuple[str, ...] = ()
-    children: Tuple[str, ...] = ()
+    parents: tuple[str, ...] = ()
+    children: tuple[str, ...] = ()
     display_text: str = ""
 
     class Config:
         allow_mutation = False
 
     @validator('parents', 'children')
-    def to_tuple(cls, v: List[str]) -> Tuple[str, ...]:
+    def to_tuple(cls, v: list[str]) -> tuple[str, ...]:
         return tuple(v)
 
     def add_parents(
         self,
-        parents: Union[List[str], Tuple[str, ...]],
+        parents: list[str] | tuple[str, ...],
     ) -> Node:
         return self.copy(
             update={'parents': parents},
@@ -41,7 +41,7 @@ class Node(BaseModel):
 
     def add_children(
         self,
-        children: Union[List[str], Tuple[str, ...]],
+        children: list[str] | tuple[str, ...],
     ) -> Node:
         return self.copy(
             update={'children': children},
@@ -59,20 +59,20 @@ class DiscreteNode(Node):
 
 
 class CategoricalNode(DiscreteNode):
-    categories: Tuple[str]
+    categories: tuple[str]
 
     class Config:
         allow_mutation = False
 
     @validator('categories')
-    def to_tuple(cls, v: List[str]) -> Tuple[str, ...]:
+    def to_tuple(cls, v: list[str]) -> tuple[str, ...]:
         return tuple(v)
 
     @classmethod
     def from_node(
         cls,
         node: Node,
-        categories: Union[List[str], Tuple[str, ...]],
+        categories: list[str] | tuple[str, ...],
         prob_table: JaxArray = jnp.array([])
     ) -> CategoricalNode:
         return cls(
