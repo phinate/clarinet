@@ -6,10 +6,6 @@ __all__ = [
     "CategoricalNode",
 ]
 
-from typing import List
-from typing import Tuple
-from typing import Union
-
 from pydantic import BaseModel, validator
 
 import jax.numpy as jnp

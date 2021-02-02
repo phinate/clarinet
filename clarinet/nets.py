@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-
 __all__ = ["BayesNet"]
 
-from typing import Dict
 from typing import Any
 
 from functools import singledispatchmethod
