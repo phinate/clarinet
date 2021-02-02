@@ -4,8 +4,6 @@ from typing import Dict
 from typing import Any
 from typing import TYPE_CHECKING
 
-from dataclasses import asdict
-
 from .validation import validate_modelstring
 
 
@@ -14,7 +12,9 @@ if TYPE_CHECKING:
 
 
 def nodes_to_dict(nodes: Dict[str, 'Node']) -> Dict[str, Dict[str, Any]]:
-    vals = list(map(asdict, nodes.values()))
+    vals = []
+    for n in nodes.values():
+        vals.append(n.dict())
     return {v['name']: v for v in vals}
 
 
