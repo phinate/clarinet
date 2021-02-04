@@ -7,7 +7,7 @@ from typing import Any
 from functools import singledispatchmethod
 from pydantic import BaseModel, validator
 
-from flax.core import freeze, unfreeze, FrozenDict
+from immutables import Map
 
 from .nodes import Node, CategoricalNode
 from .validation import validate_node, validate_model_dict
@@ -15,19 +15,19 @@ from .dictutils import nodes_to_dict, modelstring_to_dict
 
 
 class BayesNet(BaseModel):
-    nodes: FrozenDict[str, Node]
+    nodes: Map[str, Node]
     modelstring: str = ""
     # for pydantic
 
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {FrozenDict: lambda t: unfreeze(t)}
+        json_encoders = {Map: lambda t: {k: v for k, v in t.items()}}
         keep_untouched = (singledispatchmethod,)
 
     @validator('nodes')
-    def to_frozendict(cls, dct: dict[str, Node]) -> FrozenDict:
-        return freeze(dct)
+    def dict_to_map(cls, dct: dict[str, Node]) -> Map[str, Node]:
+        return Map(dct)
 
     @classmethod
     def from_dict(
@@ -71,7 +71,7 @@ class BayesNet(BaseModel):
 
     @add_node.register
     def _(self, node: Node) -> BayesNet:
-        node_dct = unfreeze(self.nodes)
+        node_dct = {k: v for k, v in self.nodes.items()}
         name = node.name
         # refactor for node
         node_dct[name] = node
