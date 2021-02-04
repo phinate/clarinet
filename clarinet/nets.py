@@ -17,15 +17,18 @@ from .dictutils import nodes_to_dict, modelstring_to_dict
 class BayesNet(BaseModel):
     nodes: Map[str, Node]
     modelstring: str = ""
-    # for pydantic
 
+    # for pydantic
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
         json_encoders = {Map: lambda t: {k: v for k, v in t.items()}}
         keep_untouched = (singledispatchmethod,)
 
-    @validator('nodes')
+    def __getitem__(self, item: str) -> Node:
+        return self.nodes[item]
+
+    @validator('nodes', pre=True)
     def dict_to_map(cls, dct: dict[str, Node]) -> Map[str, Node]:
         return Map(dct)
 
@@ -65,12 +68,13 @@ class BayesNet(BaseModel):
         return cls.from_dict(modelstring_to_dict(modelstring))
 
     @singledispatchmethod
-    def add_node(self, node) -> BayesNet:  # type: ignore
+    def add_node(self, node):   # type: ignore
         raise NotImplementedError(
             f"Type '{type(node)}' of node was not recognised")
 
+    # functools can't parse the return annotation here? ignore type for now
     @add_node.register
-    def _(self, node: Node) -> BayesNet:
+    def _(self, node: Node):  # type: ignore
         node_dct = {k: v for k, v in self.nodes.items()}
         name = node.name
         # refactor for node
