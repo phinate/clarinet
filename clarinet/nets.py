@@ -22,7 +22,7 @@ class BayesNet(BaseModel):
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {Map: lambda t: {k: v for k, v in t.items()}}
+        json_encoders = {Map: lambda t: dict(t)}
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:

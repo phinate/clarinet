@@ -45,6 +45,17 @@ class Node(BaseModel):
             deep=True
         )
 
+    @classmethod
+    def from_node(
+        cls,
+        node: Node,
+        **node_kwargs: dict[str, Any]
+    ) -> Node:
+        return cls(
+            **node.dict(),
+            **node_kwargs
+        )
+
 
 class DiscreteNode(Node):
     prob_table: _DeviceArray = jnp.array([])
@@ -68,16 +79,3 @@ class CategoricalNode(DiscreteNode):
     @validator('categories', pre=True)
     def to_tuple(cls, v: Any) -> tuple[str, ...]:
         return tuple(v)
-
-    @classmethod
-    def from_node(
-        cls,
-        node: Node,
-        categories: list[str] | tuple[str, ...],
-        prob_table: _DeviceArray = jnp.array([])
-    ) -> CategoricalNode:
-        return cls(
-            **node.dict(),
-            categories=categories,
-            prob_table=prob_table
-        )
