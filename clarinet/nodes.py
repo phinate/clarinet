@@ -65,7 +65,7 @@ class CategoricalNode(DiscreteNode):
     class Config:
         allow_mutation = False
 
-    @validator('categories')
+    @validator('categories', pre=True)
     def to_tuple(cls, v: Any) -> tuple[str, ...]:
         return tuple(v)
 

@@ -75,7 +75,7 @@ class BayesNet(BaseModel):
     # functools can't parse the return annotation here? ignore type for now
     @add_node.register
     def _(self, node: Node):  # type: ignore
-        node_dct = {k: v for k, v in self.nodes.items()}
+        node_dct = dict(self.nodes)
         name = node.name
         # refactor for node
         node_dct[name] = node
@@ -87,3 +87,17 @@ class BayesNet(BaseModel):
         dct = nodes_to_dict(node_dct)
         validate_node(name, node.dict(), network_dict=dct)
         return self.__class__.from_dict(dct, validation=False)
+
+    def convert_nodes(
+        self,
+        names: list[str] | tuple[str],
+        new_node_types: list[type[Node]] | tuple[type[Node]],
+        new_node_kwargs: list[dict[str, Any]] | tuple[dict[str, Any]]
+    ) -> BayesNet:
+        node_dct = dict(self.nodes)
+        for i, name in enumerate(names):
+            node_dct[name] = new_node_types[i].from_node(
+                node_dct[name],
+                **new_node_kwargs[i]
+            )
+        return self.copy(update={'nodes': node_dct})
