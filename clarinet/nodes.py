@@ -6,7 +6,7 @@ __all__ = [
     "CategoricalNode",
 ]
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, validate_model
 
 from typing import Any
 
@@ -30,19 +30,29 @@ class Node(BaseModel):
         self,
         parents: list[str] | tuple[str, ...],
     ) -> Node:
-        return self.copy(
-            update={'parents': parents},
+        parents = list(parents) + list(self.parents)
+        x = self.copy(
+            update={'parents': tuple(parents)},
             deep=True
         )
+        err = validate_model(self.__class__, x.dict())[2]
+        if err:
+            raise err
+        return x
 
     def add_children(
         self,
         children: list[str] | tuple[str, ...],
     ) -> Node:
-        return self.copy(
-            update={'children': children},
+        children = list(children) + list(self.children)
+        x = self.copy(
+            update={'children': tuple(children)},
             deep=True
         )
+        err = validate_model(self.__class__, x.dict())[2]
+        if err:
+            raise err
+        return x
 
     @classmethod
     def from_node(
@@ -65,10 +75,7 @@ class DiscreteNode(Node):
         json_encoders = {_DeviceArray: lambda t: t.tolist()}  # for self.json()
 
     @validator('prob_table', pre=True)
-    def to_array(cls, arr: Any = None) -> _DeviceArray:
-
-        arr = arr or jnp.zero
-
+    def to_array(cls, arr: Any) -> _DeviceArray:
         return jnp.asarray(arr)
 
 

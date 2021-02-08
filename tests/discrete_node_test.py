@@ -7,18 +7,23 @@ name = "test_name"
 
 
 @pytest.mark.parametrize(
-    'prob_table',
+    ('prob_table', 'expected_prob_table'),
     (
-        pytest.param([], id="empty list"),
-        pytest.param([[0.3, 0.7], [0.7, 0.3]], id="non-empty list"),
+        pytest.param([], jnp.array([]), id="empty list"),
         pytest.param(
+            [[0.3, 0.7], [0.7, 0.3]],
+            jnp.array([[0.3, 0.7], [0.7, 0.3]]),
+            id="non-empty list"
+        ),
+        pytest.param(
+            jnp.array([[0.3, 0.7], [0.7, 0.3]]),
             jnp.array([[0.3, 0.7], [0.7, 0.3]]),
             id="non-empty jax array"
         )
 
     )
 )
-def basic_functionality(prob_table):
+def test_basic_functionality(prob_table, expected_prob_table):
     parents, children = ["A", "B"], ["C", "D"]
     x = DiscreteNode(
         name=name,
@@ -26,5 +31,5 @@ def basic_functionality(prob_table):
         children=children,
         prob_table=prob_table
     )
-    x.dict()
+    assert jnp.allclose(x.dict()["prob_table"], expected_prob_table)
     x.json()

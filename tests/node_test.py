@@ -6,25 +6,35 @@ name = "test_name"
 
 
 @pytest.mark.parametrize(
-    ('parents', 'children'),
+    ('parents', 'children', 'expected'),
     (
-        pytest.param([], [], id="empty lists"),
-        pytest.param(["A", "B"], ["C", "D"], id="non-empty lists")
+        pytest.param(
+            [],
+            [],
+            dict(name=name, parents=(), children=()),
+            id="empty lists"
+        ),
+        pytest.param(
+            ["A", "B"],
+            ["C", "D"],
+            dict(name=name, parents=("A", "B"), children=("C", "D")),
+            id="non-empty lists"
+        )
     )
 )
-def basic_functionality(parents, children):
+def test_basic_functionality(parents, children, expected):
     x = Node(name=name, parents=parents, children=children)
-    x.dict()
+    assert x.dict() == expected
     x.json()
 
 
-def modify_parents():
-    x = Node(name, parents=["A"])
+def test_modify_parents():
+    x = Node(name=name, parents=["A"])
     y = x.add_parents(["B"])
-    assert y.parents == ("A", "B"), f"parents don't match {y.parents}"
+    assert set(y.parents) == {"A", "B"}, f"parents don't match {y.parents}"
 
 
-def modify_children():
-    x = Node(name, children=["A"])
+def test_modify_children():
+    x = Node(name=name, children=["A"])
     y = x.add_children(["B"])
-    assert y.children == ("A", "B"), f"children don't match {y.children}"
+    assert set(y.children) == {"A", "B"}, f"children don't match {y.children}"

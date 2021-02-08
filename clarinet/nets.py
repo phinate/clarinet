@@ -5,7 +5,7 @@ __all__ = ["BayesNet"]
 from typing import Any
 
 from functools import singledispatchmethod
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, validate_model
 
 from immutables import Map
 
@@ -100,4 +100,9 @@ class BayesNet(BaseModel):
                 node_dct[name],
                 **new_node_kwargs[i]
             )
-        return self.copy(update={'nodes': node_dct})
+
+        x = self.copy(update={'nodes': node_dct})
+        err = validate_model(self.__class__, x.dict())[2]
+        if err:
+            raise err
+        return x
