@@ -18,7 +18,6 @@ class Node(BaseModel):
     name: str
     parents: tuple[str, ...] = ()
     children: tuple[str, ...] = ()
-    display_text: str = ""
 
     class Config:
         allow_mutation = False
@@ -66,7 +65,10 @@ class DiscreteNode(Node):
         json_encoders = {_DeviceArray: lambda t: t.tolist()}  # for self.json()
 
     @validator('prob_table', pre=True)
-    def to_array(cls, arr: Any) -> _DeviceArray:
+    def to_array(cls, arr: Any = None) -> _DeviceArray:
+
+        arr = arr or jnp.zero
+
         return jnp.asarray(arr)
 
 
