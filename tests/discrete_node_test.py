@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import pytest
 
 from clarinet import DiscreteNode
+from clarinet import Node
 
 name = "test_name"
 
@@ -33,3 +34,13 @@ def test_basic_functionality(prob_table, expected_prob_table):
     )
     assert jnp.allclose(x.dict()["prob_table"], expected_prob_table)
     x.json()
+
+
+def test_prob_table():
+    pass  # for when shape checks and sum(probs)=1 checks exist
+
+
+def test_from_node():
+    n = Node(name=name, parents=["F"])  # arbitrary
+    prob_table = jnp.array([[0.3, 0.7], [0.7, 0.3]])
+    DiscreteNode.from_node(n, prob_table=prob_table)

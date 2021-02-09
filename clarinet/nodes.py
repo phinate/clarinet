@@ -75,5 +75,10 @@ class CategoricalNode(DiscreteNode):
         allow_mutation = False
 
     @validator('categories', pre=True)
-    def to_tuple(cls, v: Any) -> tuple[str, ...]:
+    def category_val(cls, v: Any) -> tuple[str, ...]:
+        assert (
+            (type(v) == tuple) or (type(v) == list)
+        ), 'Type of categories needs to be a list or tuple'
+        assert len(v) >= 2, 'Need at least two categories!'
+
         return tuple(v)
