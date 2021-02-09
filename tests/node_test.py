@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from clarinet import Node
 
@@ -34,7 +35,36 @@ def test_modify_parents():
     assert set(y.parents) == {"A", "B"}, f"parents don't match {y.parents}"
 
 
+def test_modify_parents_typeerror():
+    with pytest.raises(TypeError):
+        x = Node(name=name, parents=["A"])
+        x.add_parents(3)  # type: ignore
+
+
+def test_modify_parents_validerror():
+    with pytest.raises(ValidationError):
+        x = Node(name=name, parents=["A"])
+        x.add_parents([lambda:3])  # type: ignore
+
+
 def test_modify_children():
     x = Node(name=name, children=["A"])
     y = x.add_children(["B"])
     assert set(y.children) == {"A", "B"}, f"children don't match {y.children}"
+
+
+def test_modify_children_typeerror():
+    with pytest.raises(TypeError):
+        x = Node(name=name, children=["A"])
+        x.add_children(3)  # type: ignore
+
+
+def test_modify_children_validerror():
+    with pytest.raises(ValidationError):
+        x = Node(name=name, children=["A"])
+        x.add_children([lambda:33])  # type: ignore
+
+
+def test_from_node():
+    x = Node(name=name, parents=["B"], children=["A"])
+    assert Node.from_node(x) == x

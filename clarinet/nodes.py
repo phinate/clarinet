@@ -6,8 +6,7 @@ __all__ = [
     "CategoricalNode",
 ]
 
-from pydantic import BaseModel, validator, validate_model
-
+from pydantic import BaseModel, validator
 from typing import Any
 
 import jax.numpy as jnp
@@ -31,28 +30,18 @@ class Node(BaseModel):
         parents: list[str] | tuple[str, ...],
     ) -> Node:
         parents = list(parents) + list(self.parents)
-        x = self.copy(
-            update={'parents': tuple(parents)},
-            deep=True
-        )
-        err = validate_model(self.__class__, x.dict())[2]
-        if err:
-            raise err
-        return x
+        dct = self.dict()
+        dct['parents'] = parents
+        return self.__class__(**dct)
 
     def add_children(
         self,
         children: list[str] | tuple[str, ...],
     ) -> Node:
         children = list(children) + list(self.children)
-        x = self.copy(
-            update={'children': tuple(children)},
-            deep=True
-        )
-        err = validate_model(self.__class__, x.dict())[2]
-        if err:
-            raise err
-        return x
+        dct = self.dict()
+        dct['children'] = children
+        return self.__class__(**dct)
 
     @classmethod
     def from_node(
