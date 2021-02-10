@@ -1,3 +1,4 @@
+codecov>=1.4.0
 covdefaults
 coverage
 pytest
