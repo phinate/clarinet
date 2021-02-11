@@ -13,6 +13,7 @@
         - cons: requires additional binary, can't include as dependency
 
 ## nodes:
+- Do proper dimensionality checks with probability tables, and check they sum to 1 on the correct axes
 - attach distributions to nodes (possibly related to probprog choice)
 - add Continuous nodes
 - further subclass `DiscreteNode` for cases like Poisson, etc
