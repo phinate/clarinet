@@ -32,7 +32,7 @@ more_complex_dict = {
 }
 
 
-vc = 'very_complex_dict.json'
+vc = 'tests/files/very_complex_dict.json'
 
 with open(vc) as file:
     very_complex_dict = json.loads(file.read())
@@ -137,7 +137,7 @@ def test_net_instantiation(params, expected):
 # (e.g. case of learned structure? undirected models?)
 
 
-@pytest.parametrize(
+@pytest.mark.parametrize(
     'params',
     (
         pytest.param(dict(nodes=cycle_dict), id='cyclic dag'),
@@ -153,7 +153,7 @@ def test_net_instantiation_failure_cases(params):
         BayesNet(**params)
 
 
-@pytest.parametrize(
+@pytest.mark.parametrize(
     ('string', 'expected'),
     (
         pytest.param(
