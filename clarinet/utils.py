@@ -1,27 +1,28 @@
-__all__ = ["nodes_to_dict", "modelstring_to_dict"]
+from __future__ import annotations
 
-from typing import Dict
 from typing import Any
 from typing import TYPE_CHECKING
 
 from .validation import validate_modelstring
+
+_all__ = ["nodes_to_dict", "modelstring_to_dict"]
 
 
 if TYPE_CHECKING:
     from .nodes import Node
 
 
-def nodes_to_dict(nodes: Dict[str, 'Node']) -> Dict[str, Dict[str, Any]]:
+def nodes_to_dict(nodes: dict[str, Node]) -> dict[str, dict[str, Any]]:
     vals = []
     for n in nodes.values():
         vals.append(n.dict())
     return {v['name']: v for v in vals}
 
 
-def modelstring_to_dict(modelstring: str) -> Dict[str, Dict[str, Any]]:
+def modelstring_to_dict(modelstring: str) -> dict[str, dict[str, Any]]:
     validate_modelstring(modelstring)
     nodes = modelstring.replace(']', "").split("[")[1:]
-    model_dict: Dict[str, Dict[str, Any]] = {}
+    model_dict: dict[str, dict[str, Any]] = {}
     for n in nodes:
         if '|' in n:
             name, parents = n.split('|')
