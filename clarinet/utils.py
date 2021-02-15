@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from .validation import validate_modelstring
 
-_all__ = ["nodes_to_dict", "modelstring_to_dict"]
+__all__ = ["nodes_to_dict", "modelstring_to_dict"]
 
 
 if TYPE_CHECKING:
