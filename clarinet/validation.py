@@ -119,11 +119,12 @@ def validate_model_dict(network_dict: Dict[str, Dict[str, Any]]) -> None:
 
 
 def validate_modelstring(modelstring: str) -> None:
+    regex = re.compile(
+        r'((\[[\w *]+\|[\w ]*(:[\w ]+)*\])|(\[[\w *]+\]))+',
+        re.IGNORECASE
+    )
     assert (
-        re.fullmatch(
-            r'((\[[\w *]+\|?[\w ](:\w)*\])|(\[[\w *]+\]))+',
-            modelstring
-        )
+        re.fullmatch(regex, modelstring)
     ), ("Not a valid model string.\nShould be a sequence of items "
         + "following the `bnlearn` convention: "
         + "'[Node name|List of parent nodes]'")
