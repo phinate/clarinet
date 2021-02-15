@@ -11,7 +11,7 @@ from immutables import Map
 
 from .nodes import Node, CategoricalNode
 from .validation import validate_node, validate_model_dict
-from .dictutils import nodes_to_dict, modelstring_to_dict
+from .utils import nodes_to_dict, modelstring_to_dict
 
 
 class BayesNet(BaseModel):
