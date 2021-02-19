@@ -2,7 +2,13 @@
 
 *note*: no core functionality exists for statistics yet! soon to be added :3
 
+## algorithms:
+- variable elimination for inference over discrete networks
+- hook into probprog under the hood for approx inference (long-term ambition)
+
 ## nets:
+- add validation routines as pydantic validators
+    - to skip validation, use model.copy!
 - automatically generate modelstring from node map
 - use a lib that displays PGMs, e.g.
     - [`daft`](https://docs.daft-pgm.org/en/latest/)
@@ -18,7 +24,3 @@
 - add Continuous nodes
 - further subclass `DiscreteNode` for cases like Poisson, etc
     - maybe infer node type from distribution, and stop subclassing? just have Discrete (b/c prob table), then a `distribution` variable
-
-## algorithms:
-- variable elimination
-- hook into probprog under the hood for approx inference
