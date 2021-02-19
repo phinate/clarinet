@@ -1,8 +1,8 @@
 __all__ = [
-    'BayesNet',
-    'CategoricalNode',
-    'DiscreteNode',
-    'Node',
+    "BayesNet",
+    "CategoricalNode",
+    "DiscreteNode",
+    "Node",
 ]
 from .nets import BayesNet
 from .nodes import CategoricalNode

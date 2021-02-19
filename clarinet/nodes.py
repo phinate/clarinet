@@ -21,7 +21,7 @@ class Node(BaseModel):
     class Config:
         allow_mutation = False
 
-    @validator('parents', 'children')
+    @validator("parents", "children")
     def to_tuple(cls, v: Any) -> tuple[str, ...]:
         return tuple(v)
 
@@ -31,7 +31,7 @@ class Node(BaseModel):
     ) -> Node:
         parents = list(parents) + list(self.parents)
         dct = self.dict()
-        dct['parents'] = parents
+        dct["parents"] = parents
         return self.__class__(**dct)
 
     def add_children(
@@ -40,19 +40,12 @@ class Node(BaseModel):
     ) -> Node:
         children = list(children) + list(self.children)
         dct = self.dict()
-        dct['children'] = children
+        dct["children"] = children
         return self.__class__(**dct)
 
     @classmethod
-    def from_node(
-        cls,
-        node: Node,
-        **node_kwargs: dict[str, Any]
-    ) -> Node:
-        return cls(
-            **node.dict(),
-            **node_kwargs
-        )
+    def from_node(cls, node: Node, **node_kwargs: dict[str, Any]) -> Node:
+        return cls(**node.dict(), **node_kwargs)
 
 
 class DiscreteNode(Node):
@@ -63,7 +56,7 @@ class DiscreteNode(Node):
         arbitrary_types_allowed = True
         json_encoders = {_DeviceArray: lambda t: t.tolist()}  # for self.json()
 
-    @validator('prob_table', pre=True)
+    @validator("prob_table", pre=True)
     def to_array(cls, arr: Any) -> _DeviceArray:
         return jnp.asarray(arr)
 
@@ -74,11 +67,11 @@ class CategoricalNode(DiscreteNode):
     class Config:
         allow_mutation = False
 
-    @validator('categories', pre=True)
+    @validator("categories", pre=True)
     def category_val(cls, v: Any) -> tuple[str, ...]:
-        assert (
-            (type(v) == tuple) or (type(v) == list)
-        ), 'Type of categories needs to be a list or tuple'
-        assert len(v) >= 2, 'Need at least two categories!'
+        assert (type(v) == tuple) or (
+            type(v) == list
+        ), "Type of categories needs to be a list or tuple"
+        assert len(v) >= 2, "Need at least two categories!"
 
         return tuple(v)

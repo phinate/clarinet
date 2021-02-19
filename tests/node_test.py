@@ -7,21 +7,18 @@ name = "test_name"
 
 
 @pytest.mark.parametrize(
-    ('parents', 'children', 'expected'),
+    ("parents", "children", "expected"),
     (
         pytest.param(
-            [],
-            [],
-            dict(name=name, parents=(), children=()),
-            id="empty lists"
+            [], [], dict(name=name, parents=(), children=()), id="empty lists"
         ),
         pytest.param(
             ["A", "B"],
             ["C", "D"],
             dict(name=name, parents=("A", "B"), children=("C", "D")),
-            id="non-empty lists"
-        )
-    )
+            id="non-empty lists",
+        ),
+    ),
 )
 def test_basic_functionality(parents, children, expected):
     x = Node(name=name, parents=parents, children=children)
@@ -44,7 +41,7 @@ def test_modify_parents_typeerror():
 def test_modify_parents_validerror():
     with pytest.raises(ValidationError):
         x = Node(name=name, parents=["A"])
-        x.add_parents([lambda:3])  # type: ignore
+        x.add_parents([lambda: 3])  # type: ignore
 
 
 def test_modify_children():
@@ -62,7 +59,7 @@ def test_modify_children_typeerror():
 def test_modify_children_validerror():
     with pytest.raises(ValidationError):
         x = Node(name=name, children=["A"])
-        x.add_children([lambda:33])  # type: ignore
+        x.add_children([lambda: 33])  # type: ignore
 
 
 def test_from_node():

@@ -2,7 +2,7 @@ __all__ = [
     "recursive_cycle_check",
     "validate_node",
     "validate_model_dict",
-    "validate_modelstring"
+    "validate_modelstring",
 ]
 
 from typing import List
@@ -26,18 +26,12 @@ def recursive_cycle_check(
             ), f"Network has a cycle -- can cycle back to '{name}'!"
             recursive_cycle_check(name, entry["children"], network_dict)
 
-# TODO: MAKE THIS SINGLE DISPATCH for node and dict
-
 
 def validate_node(
-    name: str,
-    node_dict: Dict[str, Any],
-    network_dict: Dict[str, Dict[str, Any]]
+    name: str, node_dict: Dict[str, Any], network_dict: Dict[str, Dict[str, Any]]
 ) -> None:
 
-    cycle_check = partial(
-        recursive_cycle_check, network_dict=network_dict
-    )
+    cycle_check = partial(recursive_cycle_check, network_dict=network_dict)
 
     has_parents = False
     if "parents" in node_dict.keys():
@@ -66,43 +60,41 @@ def validate_node(
     # check validity of declared parents
     if has_parents:
         for parent in node_dict["parents"]:
-            assert (
-                parent != name
-            ), (f"Self-cycle found in '{name}' "
-                + "(not allowed in a DAG!)")
-            assert (
-                parent in network_dict.keys()
-            ), (f"'{parent}' is declared as a parent of '{name}', "
-                + "but not declared as a node.")
-            assert (
-                "children" in network_dict[parent].keys()
-            ), (f"{name} declared as child for '{parent}', "
-                + "but '{parent}' has no children.")
-            assert (
-                name in network_dict[parent]["children"]
-            ), (f"'{name}' must be declared a child of '{parent}', "
-                + f"since '{parent}' is listed as a parent of '{name}'.")
+            assert parent != name, (
+                f"Self-cycle found in '{name}' " + "(not allowed in a DAG!)"
+            )
+            assert parent in network_dict.keys(), (
+                f"'{parent}' is declared as a parent of '{name}', "
+                + "but not declared as a node."
+            )
+            assert "children" in network_dict[parent].keys(), (
+                f"{name} declared as child for '{parent}', "
+                + "but '{parent}' has no children."
+            )
+            assert name in network_dict[parent]["children"], (
+                f"'{name}' must be declared a child of '{parent}', "
+                + f"since '{parent}' is listed as a parent of '{name}'."
+            )
 
     # vice-versa for children
     if has_children:
         children = node_dict["children"]
         for child in children:
-            assert (
-                child != name
-            ), (f"Self-cycle found in '{name}' " +
-                "(not allowed in a DAG!)")
-            assert (
-                child in network_dict.keys()
-            ), (f"'{child}' is declared as a child of '{name}', " +
-                "but not declared as a node.")
-            assert (
-                "parents" in network_dict[child].keys()
-            ), (f"'{name}' declared as parent for '{child}', " +
-                "but '{child}' has no parents.")
-            assert (
-                name in network_dict[child]["parents"]
-            ), (f"'{name}' must be declared a parent of '{child}', " +
-                f"since '{child}' is listed as a child of '{name}'.")
+            assert child != name, (
+                f"Self-cycle found in '{name}' " + "(not allowed in a DAG!)"
+            )
+            assert child in network_dict.keys(), (
+                f"'{child}' is declared as a child of '{name}', "
+                + "but not declared as a node."
+            )
+            assert "parents" in network_dict[child].keys(), (
+                f"'{name}' declared as parent for '{child}', "
+                + "but '{child}' has no parents."
+            )
+            assert name in network_dict[child]["parents"], (
+                f"'{name}' must be declared a parent of '{child}', "
+                + f"since '{child}' is listed as a child of '{name}'."
+            )
         # check recursively to see if any child links back to this node
         cycle_check(name, children)
 
@@ -120,11 +112,10 @@ def validate_model_dict(network_dict: Dict[str, Dict[str, Any]]) -> None:
 
 def validate_modelstring(modelstring: str) -> None:
     regex = re.compile(
-        r'((\[[\w *]+\|[\w ]*(:[\w ]+)*\])|(\[[\w *]+\]))+',
-        re.IGNORECASE
+        r"((\[[\w *]+\|[\w ]*(:[\w ]+)*\])|(\[[\w *]+\]))+", re.IGNORECASE
     )
-    assert (
-        re.fullmatch(regex, modelstring)
-    ), ("Not a valid model string.\nShould be a sequence of items "
+    assert re.fullmatch(regex, modelstring), (
+        "Not a valid model string.\nShould be a sequence of items "
         + "following the `bnlearn` convention: "
-        + "'[Node name|List of parent nodes]'")
+        + "'[Node name|List of parent nodes]'"
+    )

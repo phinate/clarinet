@@ -28,7 +28,7 @@ class BayesNet(BaseModel):
     def __getitem__(self, item: str) -> Node:
         return self.nodes[item]
 
-    @validator('nodes', pre=True)
+    @validator("nodes", pre=True)
     def dict_to_map(cls, dct: dict[str, Node]) -> Map[str, Node]:
         return Map(dct)
 
@@ -46,7 +46,7 @@ class BayesNet(BaseModel):
         cls,
         network_dict: dict[str, dict[str, Any]],
         validation: bool = True,
-        modelstring: str = ""
+        modelstring: str = "",
     ) -> BayesNet:
         # validation step
         # TODO: jsonschema
@@ -73,15 +73,11 @@ class BayesNet(BaseModel):
 
     @classmethod
     def from_modelstring(cls, modelstring: str) -> BayesNet:
-        return cls.from_dict(
-            modelstring_to_dict(modelstring),
-            modelstring=modelstring
-        )
+        return cls.from_dict(modelstring_to_dict(modelstring), modelstring=modelstring)
 
     @singledispatchmethod
-    def add_node(self, node):   # type: ignore
-        raise NotImplementedError(
-            f"Type '{type(node)}' of node was not recognised")
+    def add_node(self, node):  # type: ignore
+        raise NotImplementedError(f"Type '{type(node)}' of node not recognised")
 
     # functools can't parse the return annotation here? ignore type for now
     @add_node.register
@@ -103,16 +99,15 @@ class BayesNet(BaseModel):
         self,
         names: list[str] | tuple[str],
         new_node_types: list[type[Node]] | tuple[type[Node]],
-        new_node_kwargs: list[dict[str, Any]] | tuple[dict[str, Any]]
+        new_node_kwargs: list[dict[str, Any]] | tuple[dict[str, Any]],
     ) -> BayesNet:
         node_dct = dict(self.nodes)
         for i, name in enumerate(names):
             node_dct[name] = new_node_types[i].from_node(
-                node_dct[name],
-                **new_node_kwargs[i]
+                node_dct[name], **new_node_kwargs[i]
             )
 
-        x = self.copy(update={'nodes': node_dct})
+        x = self.copy(update={"nodes": node_dct})
         err = validate_model(self.__class__, x.dict())[2]
         if err:
             raise err

@@ -16,19 +16,19 @@ def test_basic_functionality():
         parents=parents,
         children=children,
         prob_table=prob_table,
-        categories=categories
+        categories=categories,
     )
     assert x.categories == ("c1", "c2")
     x.json()
 
 
 @pytest.mark.parametrize(
-    'categories',
+    "categories",
     (
         pytest.param([], id="empty"),
         pytest.param(["e"], id="only one category"),
-        pytest.param("fagfdsgfd", id="string")
-    )
+        pytest.param("fagfdsgfd", id="string"),
+    ),
 )
 def test_categories_validerror(categories):
     with pytest.raises(ValidationError):
