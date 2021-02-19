@@ -9,7 +9,7 @@
 ## nets:
 - add validation routines as pydantic validators
     - to skip validation, use model.copy!
-- automatically generate modelstring from node map
+- ~automatically generate modelstring from node map~
 - use a lib that displays PGMs, e.g.
     - [`daft`](https://docs.daft-pgm.org/en/latest/)
         - pros: nice style, lightweight
