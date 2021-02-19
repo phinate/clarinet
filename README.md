@@ -18,18 +18,18 @@ import clarinet as cn
 
 # bnlearn-style modelstring init
 cn.BayesNet.from_modelstring("[A][C][B|A][D|C][F|A:B:C][E|F]")
-> BayesNet(
-    nodes=<immutables.Map(
-        {
-            'C': Node(name='C', parents=(), children=('D', 'F')),
-            'F': Node(name='F', parents=('A', 'B', 'C'), children=('E',)),
-            'B': Node(name='B', parents=('A',), children=('F',)),
-            'D': Node(name='D', parents=('C',), children=()),
-            'A': Node(name='A', parents=(), children=('B', 'F')),
-            'E': Node(name='E', parents=('F',), children=())
-        }
-    ) at 0x16b5475c0>, modelstring=''
-)
+#> BayesNet(
+#    nodes=<immutables.Map(
+#        {
+#            'C': Node(name='C', parents=(), children=('D', 'F')),
+#            'F': Node(name='F', parents=('A', 'B', 'C'), children=('E',)),
+#            'B': Node(name='B', parents=('A',), children=('F',)),
+#            'D': Node(name='D', parents=('C',), children=()),
+#            'A': Node(name='A', parents=(), children=('B', 'F')),
+#            'E': Node(name='E', parents=('F',), children=())
+#        }
+#    ) at 0x16b5475c0>, modelstring=''
+#)
 
 
 # dict-style init
@@ -49,20 +49,20 @@ example_model_dict = {
 
 net = cn.BayesNet.from_dict(example_model_dict)
 net
-> BayesNet(
-    nodes=<immutables.Map(
-        {
-            'wet grass': Node(name='wet grass', parents=('raining',), children=()),
-            'cloudy': Node(name='cloudy', parents=(), children=('raining',)),
-            'raining': CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
-        }
-    ) at 0x16a6b2100>, modelstring=''
-)
+#> BayesNet(
+#    nodes=<immutables.Map(
+#        {
+#            'wet grass': Node(name='wet grass', parents=('raining',), children=()),
+#            'cloudy': Node(name='cloudy', parents=(), children=('raining',)),
+#            'raining': CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
+#        }
+#    ) at 0x16a6b2100>, modelstring=''
+#)
 
 
 # index into the network by name to look at a particular node
 net["raining"]
-> CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
+#> CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
 
 # let's add some category names that we forgot!
 net.convert_nodes(
@@ -76,11 +76,11 @@ net.convert_nodes(
         dict(categories=["cloudy", "clear"]),
     ]
 )
-> BayesNet(
-    nodes={
-        'wet grass': CategoricalNode(name='wet grass', parents=('raining',), children=(), prob_table=array([], dtype=float32), categories=('wet', 'dry')),
-        'cloudy': CategoricalNode(name='cloudy', parents=(), children=('raining',), prob_table=array([], dtype=float32), categories=('cloudy', 'clear')),
-        'raining': CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
-    }, modelstring=''
-)
+#> BayesNet(
+#    nodes={
+#        'wet grass': CategoricalNode(name='wet grass', parents=('raining',), children=(), prob_table=array([], dtype=float32), categories=('wet', 'dry')),
+#        'cloudy': CategoricalNode(name='cloudy', parents=(), children=('raining',), prob_table=array([], dtype=float32), categories=('cloudy', 'clear')),
+#        'raining': CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
+#    }, modelstring=''
+#)
 ```
