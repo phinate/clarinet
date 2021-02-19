@@ -5,6 +5,8 @@ import pytest
 from clarinet import BayesNet
 # make sure to use every node type in every example where possible
 # add prob tables later
+# expect failures in .json comparisons until this issue resolves:
+# https://github.com/samuelcolvin/pydantic/issues/660
 
 normal_dict = {
     "raining": {
@@ -72,6 +74,8 @@ cycle_dict = {
     },
 }
 
+# isolated case may be changed later
+# (e.g. case of learned structure? undirected models?)
 isolated_dict = {
     "raining": {
         "parents": ["cloudy"],
@@ -107,50 +111,50 @@ missing_dict = {
     },
 }
 
+# from_dict is the main method for intended use
+# still need to cover calling normally (bayesnet())
+
 
 @pytest.mark.parametrize(
     ('params', 'expected'),
     (
         pytest.param(
-            dict(nodes=normal_dict),
+            normal_dict,
             normal_dict,
             id="simple dag structure with categories",
         ),
         pytest.param(
-            dict(nodes=more_complex_dict),
+            more_complex_dict,
             more_complex_dict,
             id="more complex dag structure",
         ),
         pytest.param(
-            dict(nodes=very_complex_dict),
+            very_complex_dict,
             very_complex_dict,
             id="very complex dag structure",
         ),
     )
 )
 def test_net_instantiation(params, expected):
-    x = BayesNet(**params)
+    x = BayesNet.from_dict(params)
     assert json.loads(x.json())["nodes"] == expected
     x.json()
-
-# isolated case may be changed later
-# (e.g. case of learned structure? undirected models?)
 
 
 @pytest.mark.parametrize(
     'params',
     (
-        pytest.param(dict(nodes=cycle_dict), id='cyclic dag'),
-        pytest.param(dict(nodes=isolated_dict), id='dag with isolated node'),
+        pytest.param(cycle_dict, id='cyclic dag'),
+        pytest.param(isolated_dict, id='dag with isolated node'),
         pytest.param(
-            dict(nodes=missing_dict),
+            dict(missing_dict),
             id='dag with parents/children that arent nodes'
         ),
     ),
 )
 def test_net_instantiation_failure_cases(params):
-    #     with pytest.raises(AssertionError):
-    BayesNet(**params)
+    with pytest.raises(AssertionError):
+        BayesNet.from_dict(params)
 
 
 @pytest.mark.parametrize(
@@ -169,10 +173,10 @@ def test_from_modelstring(string, expected):
 #     assert x.modelstring = string
 
 
-def test_from_modelstring_invalid(string): pass
+# def test_from_modelstring_invalid(string): pass
 
 
-def test_add_node(node, expected): pass
+# def test_add_node(node, expected): pass
 
 
-def test_modify_nodes(node_types, node_kwargs, expected): pass
+# def test_modify_nodes(node_types, node_kwargs, expected): pass
