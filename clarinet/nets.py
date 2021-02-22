@@ -36,9 +36,9 @@ class BayesNet(BaseModel):
     def generate_modelstring(cls, values: dict[str, Any]) -> dict[str, Any]:
         if values["modelstring"] == "":
             for node in values["nodes"].values():
-                ps = node.parents
+                parents = node.parents
                 values["modelstring"] += f"[{node.name}"
-                values["modelstring"] += f"|{':'.join(ps)}]" if ps else "]"
+                values["modelstring"] += f"|{':'.join(parents)}]" if parents else "]"
         return values
 
     @classmethod
