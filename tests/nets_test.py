@@ -1,8 +1,12 @@
 import json
 
+import jax.numpy as jnp
 import pytest
 
 from clarinet import BayesNet
+from clarinet import CategoricalNode
+from clarinet import DiscreteNode
+from clarinet import Node
 
 # make sure to use every node type in every example where possible
 # add prob tables later
@@ -170,15 +174,41 @@ def test_net_instantiation_failure_cases(params):
 def test_from_modelstring(string, expected):
     x = BayesNet.from_modelstring(string)
     assert json.loads(x.json())["nodes"] == expected
+    assert x.modelstring == string
 
 
-#     assert x.modelstring = string
+# just iterate over a bunch of incorrect strings
+@pytest.mark.parametrize(
+    "string",
+    ("[A", "[]", "[A|B][B|A]", "[A][B|A|C][C]", "[A| ]", "[A][|B]", "[A][B|:A]"),
+)
+def test_from_modelstring_invalid(string):
+    with pytest.raises(AssertionError):
+        BayesNet.from_modelstring(string)
 
 
-# def test_from_modelstring_invalid(string): pass
-
-
-# def test_add_node(node, expected): pass
+@pytest.mark.parametrize(
+    ("node_type", "kwargs", "expected_structure"),
+    (
+        pytest.param(Node, dict(name="B", parents="A"), id="test adding child"),
+        pytest.param(Node, dict(name="B", children="A"), id="test adding parent"),
+        pytest.param(
+            DiscreteNode,
+            dict(name="B", parents="A", prob_table=jnp.array([0.1, 0.9])),
+            id="discrete case",
+        ),
+        pytest.param(
+            CategoricalNode,
+            dict(name="B", parents="A", categories=["yes", "no"]),
+            id="categorical case",
+        ),
+    ),
+)
+def test_add_node(node_type, kwargs):
+    node = node_type(kwargs)
+    net = BayesNet.from_modelstring("[A]")
+    net = net.add_node(node)
+    assert net["B"] == node
 
 
 # def test_modify_nodes(node_types, node_kwargs, expected): pass
