@@ -1,6 +1,5 @@
 import json
 
-import jax.numpy as jnp
 import pytest
 
 from clarinet import BayesNet
@@ -79,27 +78,6 @@ cycle_dict = {
     },
 }
 
-# isolated case may be changed later
-# (e.g. case of learned structure? undirected models?)
-isolated_dict = {
-    "raining": {
-        "parents": ["cloudy"],
-        "children": ["wet grass"],
-        "categories": ["raining", "not raining"],
-    },
-    "cloudy": {
-        "children": ["raining"],
-        "categories": ["cloudy", "clear"],
-    },
-    "wet grass": {
-        "parents": ["raining"],
-        "categories": ["wet", "dry"],
-    },
-    "yeet skeet": {
-        "parents": [],
-    },
-}
-
 missing_dict = {
     "raining": {
         "parents": ["cloudy"],
@@ -150,7 +128,6 @@ def test_net_instantiation(params, expected):
     "params",
     (
         pytest.param(cycle_dict, id="cyclic dag"),
-        pytest.param(isolated_dict, id="dag with isolated node"),
         pytest.param(
             dict(missing_dict), id="dag with parents/children that arent nodes"
         ),
@@ -188,27 +165,27 @@ def test_from_modelstring_invalid(string):
 
 
 @pytest.mark.parametrize(
-    ("node_type", "kwargs", "expected_structure"),
+    ("node_type", "kwargs"),
     (
-        pytest.param(Node, dict(name="B", parents="A"), id="test adding child"),
-        pytest.param(Node, dict(name="B", children="A"), id="test adding parent"),
+        pytest.param(Node, dict(name="B", parents=["A"]), id="test adding child"),
+        pytest.param(Node, dict(name="B", children=["A"]), id="test adding parent"),
         pytest.param(
             DiscreteNode,
-            dict(name="B", parents="A", prob_table=jnp.array([0.1, 0.9])),
+            dict(name="B", parents=["A"], prob_table=[0.1, 0.9]),
             id="discrete case",
         ),
         pytest.param(
             CategoricalNode,
-            dict(name="B", parents="A", categories=["yes", "no"]),
+            dict(name="B", parents=["A"], categories=["yes", "no"]),
             id="categorical case",
         ),
     ),
 )
 def test_add_node(node_type, kwargs):
-    node = node_type(kwargs)
+    node = node_type(**kwargs)
     net = BayesNet.from_modelstring("[A]")
     net = net.add_node(node)
-    assert net["B"] == node
+    assert net[node.name].dict() == node.dict()
 
 
 # def test_modify_nodes(node_types, node_kwargs, expected): pass

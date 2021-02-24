@@ -9,7 +9,7 @@ from pydantic import BaseModel, validator, validate_model, root_validator
 
 from immutables import Map
 
-from .nodes import Node, CategoricalNode
+from .nodes import Node, CategoricalNode, DiscreteNode
 from .validation import validate_node, validate_model_dict
 from .utils import nodes_to_dict, modelstring_to_dict
 
@@ -55,17 +55,13 @@ class BayesNet(BaseModel):
         nodes: dict[str, Node] = {}
         for i, items in enumerate(network_dict.items()):
             name, node_dict = items
-            # convert to tuples for immutability
-            if "parents" in node_dict.keys():
-                node_dict["parents"] = node_dict["parents"]
-            if "children" in node_dict.keys():
-                node_dict["children"] = node_dict["children"]
             if "name" not in node_dict.keys():
                 node_dict["name"] = name
             # special casing
             if "categories" in node_dict.keys():
-                node_dict["categories"] = node_dict["categories"]
                 nodes[name] = CategoricalNode(**node_dict)
+            elif "prob_table" in node_dict.keys():
+                nodes[name] = DiscreteNode(**node_dict)
             else:
                 nodes[name] = Node(**node_dict)
             # display_text = node.display_text or name  # TODO daft
@@ -84,7 +80,6 @@ class BayesNet(BaseModel):
     def _(self, node: Node):  # type: ignore
         node_dct = dict(self.nodes)
         name = node.name
-        # refactor for node
         node_dct[name] = node
         # make sure to complete arcs from their other ends
         for child in node.children:
