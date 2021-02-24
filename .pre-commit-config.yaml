@@ -33,13 +33,3 @@ repos:
     rev: v0.812
     hooks:
     -   id: mypy
--   repo: https://github.com/nbQA-dev/nbQA
-    rev: v0.5.8-1-g1defb695ced783d6f67273a21bdd1951ea3f7e90
-    hooks:
-    - id: nbqa-black
-      additional_dependencies: [black==20.8b1]
-      args: [--nbqa-mutate]
-    - id: nbqa-pyupgrade
-      additional_dependencies: [pyupgrade==2.7.4]
-    - id: nbqa-mypy
-      additional_dependencies: [mypy==0.790]
