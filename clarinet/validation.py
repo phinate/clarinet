@@ -43,19 +43,19 @@ def validate_node(
             has_children = True
 
     # check for isolated nodes
-    if not has_parents and not has_children:
-        in_keys = False
-        for second_node_dict in network_dict.values():
-            if "parents" in second_node_dict.keys():
-                if name in second_node_dict["parents"]:
-                    in_keys = True
-                    break
+    #     if not has_parents and not has_children:
+    #         in_keys = False
+    #         for second_node_dict in network_dict.values():
+    #             if "parents" in second_node_dict.keys():
+    #                 if name in second_node_dict["parents"]:
+    #                     in_keys = True
+    #                     break
 
-            if "children" in second_node_dict.keys():
-                if name in second_node_dict["children"]:
-                    in_keys = True
-                    break
-        assert in_keys, f"Node {name} is isolated!"
+    #             if "children" in second_node_dict.keys():
+    #                 if name in second_node_dict["children"]:
+    #                     in_keys = True
+    #                     break
+    #         assert in_keys, f"Node {name} is isolated!"
 
     # check validity of declared parents
     if has_parents:
@@ -112,7 +112,7 @@ def validate_model_dict(network_dict: Dict[str, Dict[str, Any]]) -> None:
 
 def validate_modelstring(modelstring: str) -> None:
     regex = re.compile(
-        r"((\[[\w *]+\|[\w ]*(:[\w ]+)*\])|(\[[\w *]+\]))+", re.IGNORECASE
+        r"((\[[\w *]+\|\w+[\w ]*(:\w+[\w ]*)*\])|(\[[\w *]+\]))+", re.IGNORECASE
     )
     assert re.fullmatch(regex, modelstring), (
         "Not a valid model string.\nShould be a sequence of items "

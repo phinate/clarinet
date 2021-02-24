@@ -9,8 +9,7 @@ __all__ = [
 from pydantic import BaseModel, validator
 from typing import Any
 
-import jax.numpy as jnp
-from jax.interpreters.xla import _DeviceArray  # type: ignore
+import numpy as np
 
 
 class Node(BaseModel):
@@ -49,16 +48,16 @@ class Node(BaseModel):
 
 
 class DiscreteNode(Node):
-    prob_table: _DeviceArray = jnp.array([])
+    prob_table: np.ndarray = np.array([])
 
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {_DeviceArray: lambda t: t.tolist()}  # for self.json()
+        json_encoders = {np.ndarray: lambda t: t.tolist()}  # for self.json()
 
     @validator("prob_table", pre=True)
-    def to_array(cls, arr: Any) -> _DeviceArray:
-        return jnp.asarray(arr)
+    def to_array(cls, arr: Any) -> np.ndarray:
+        return np.asarray(arr)
 
 
 class CategoricalNode(DiscreteNode):
