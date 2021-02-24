@@ -1,11 +1,10 @@
-import jax.numpy as jnp
 import pytest
 from pydantic import ValidationError
 
 from clarinet import CategoricalNode
 
 name = "test_name"
-prob_table = jnp.array([[0.3, 0.7], [0.7, 0.3]])
+prob_table = [[0.3, 0.7], [0.7, 0.3]]
 
 
 def test_basic_functionality():

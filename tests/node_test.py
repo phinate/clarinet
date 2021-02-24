@@ -40,8 +40,7 @@ def test_modify_parents_typeerror():
 
 def test_modify_parents_validerror():
     with pytest.raises(ValidationError):
-        x = Node(name=name, parents=["A"])
-        x.add_parents([lambda: 3])  # type: ignore
+        Node(name=name, parents=["A"]).add_parents([lambda: 3])  # type: ignore
 
 
 def test_modify_children():
@@ -58,8 +57,7 @@ def test_modify_children_typeerror():
 
 def test_modify_children_validerror():
     with pytest.raises(ValidationError):
-        x = Node(name=name, children=["A"])
-        x.add_children([lambda: 33])  # type: ignore
+        Node(name=name, children=["A"]).add_children([lambda: 33])  # type: ignore
 
 
 def test_from_node():
