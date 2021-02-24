@@ -1,6 +1,8 @@
 import json
 
+import numpy as np
 import pytest
+from pydantic import ValidationError
 
 from clarinet import BayesNet
 from clarinet import CategoricalNode
@@ -194,4 +196,31 @@ def test_add_node(node_type, kwargs):
     assert net[node.name].dict() == node.dict()
 
 
-# def test_modify_nodes(node_types, node_kwargs, expected): pass
+def test_modify_nodes():
+    net = BayesNet.from_dict(more_complex_dict)
+
+    net = net.convert_nodes(
+        names=["O", "S"],
+        new_node_types=[CategoricalNode, DiscreteNode],
+        new_node_kwargs=[
+            dict(categories=["A", "B"]),
+            dict(prob_table=[0.9, 0.1]),
+        ],
+    )
+
+    assert net["O"].categories == ("A", "B")
+    assert np.allclose(net["S"].prob_table, np.array([0.9, 0.1]))
+
+
+def test_modify_nodes_validation_error():
+    net = BayesNet.from_dict(more_complex_dict)
+    with pytest.raises(ValidationError):
+        net.convert_nodes(
+            names=["O"],
+            new_node_types=[
+                CategoricalNode,
+            ],
+            new_node_kwargs=[
+                dict(categories=2),
+            ],
+        )

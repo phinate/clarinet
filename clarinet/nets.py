@@ -108,7 +108,5 @@ class BayesNet(BaseModel):
             )
 
         x = self.copy(update={"nodes": node_dct})
-        err = validate_model(self.__class__, x.dict())[2]
-        if err:
-            raise err
+        validate_model(self.__class__, x.dict())[2]
         return x
