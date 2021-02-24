@@ -9,6 +9,8 @@ from pydantic import BaseModel, validator, validate_model, root_validator
 
 from immutables import Map
 
+import numpy as np
+
 from .nodes import Node, CategoricalNode, DiscreteNode
 from .validation import validate_node, validate_model_dict
 from .utils import nodes_to_dict, modelstring_to_dict
@@ -22,7 +24,10 @@ class BayesNet(BaseModel):
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {Map: lambda t: dict(t)}
+        json_encoders = {
+            Map: lambda t: {name: node for name, node in t.items()},
+            np.ndarray: lambda t: t.tolist(),
+        }
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:
