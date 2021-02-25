@@ -139,7 +139,7 @@ def test_net_instantiation(params, expected):
     ),
 )
 def test_net_instantiation_failure_cases(params):
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValidationError):
         BayesNet.from_dict(params)
 
 
@@ -162,14 +162,19 @@ def test_from_modelstring(string, expected):
     assert x.modelstring == string
 
 
-# just iterate over a bunch of incorrect strings
+# just iterate over incorrect strings
 @pytest.mark.parametrize(
     "string",
-    ("[A", "[]", "[A|B][B|A]", "[A][B|A|C][C]", "[A| ]", "[A][|B]", "[A][B|:A]"),
+    ("[A|B][B|A]"),
 )
-def test_from_modelstring_invalid(string):
-    with pytest.raises(AssertionError):
+def test_from_modelstring_fail_validation(string):
+    with pytest.raises(ValidationError):
         BayesNet.from_modelstring(string)
+
+
+def test_from_modelstring_fail_no_node():
+    with pytest.raises(AssertionError):
+        BayesNet.from_modelstring("[B|C]")
 
 
 @pytest.mark.parametrize(
