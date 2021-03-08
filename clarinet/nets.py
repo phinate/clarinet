@@ -2,7 +2,7 @@ from __future__ import annotations
 
 __all__ = ["BayesNet"]
 
-from typing import Any
+from typing import Any, Dict, List, Tuple
 
 from functools import singledispatchmethod
 from pydantic import BaseModel, validator, root_validator
@@ -33,7 +33,7 @@ class BayesNet(BaseModel):
         return self.nodes[item]
 
     @validator("nodes", pre=True)
-    def dict_to_map(cls, dct: dict[str, Node]) -> Map[str, Node]:
+    def dict_to_map(cls, dct: Dict[str, Node]) -> Map[str, Node]:
         return Map(dct)
 
     # this doesn't pick up cycles that occur when searching for node-centric cycles
@@ -41,8 +41,8 @@ class BayesNet(BaseModel):
     @staticmethod
     def _recursive_cycle_check(
         name: str,
-        children: list[str],
-        network_dict: dict[str, dict[str, Any]],
+        children: List[str],
+        network_dict: Dict[str, Dict[str, Any]],
     ) -> None:
         for child in children:
             entry = network_dict[child]
@@ -62,7 +62,7 @@ class BayesNet(BaseModel):
 
     @staticmethod
     def _validate_node(
-        name: str, node_dict: dict[str, Any], network_dict: dict[str, dict[str, Any]]
+        name: str, node_dict: Dict[str, Any], network_dict: Dict[str, Dict[str, Any]]
     ) -> None:
 
         cycle_check = partial(
@@ -135,7 +135,7 @@ class BayesNet(BaseModel):
             cycle_check(name, children)
 
     @staticmethod
-    def _nodes_to_dict(nodes: dict[str, Node]) -> dict[str, dict[str, Any]]:
+    def _nodes_to_dict(nodes: Dict[str, Node]) -> Dict[str, Dict[str, Any]]:
         vals = []
         for n in nodes.values():
             vals.append(n.dict())
@@ -154,7 +154,7 @@ class BayesNet(BaseModel):
         return nodes
 
     @root_validator(skip_on_failure=True, pre=True)
-    def init_modelstring(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def init_modelstring(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if values["modelstring"] == "":
             for node in values["nodes"].values():
                 parents = node.parents
@@ -165,11 +165,11 @@ class BayesNet(BaseModel):
     @classmethod
     def from_dict(
         cls,
-        network_dict: dict[str, dict[str, Any]],
+        network_dict: Dict[str, Dict[str, Any]],
         validation: bool = True,
         modelstring: str = "",
     ) -> BayesNet:
-        nodes: dict[str, Node] = {}
+        nodes: Dict[str, Node] = {}
         for i, items in enumerate(network_dict.items()):
             name, node_dict = items
             if "name" not in node_dict.keys():
@@ -209,9 +209,9 @@ class BayesNet(BaseModel):
 
     def convert_nodes(
         self,
-        names: list[str] | tuple[str],
-        new_node_types: list[type[Node]] | tuple[type[Node]],
-        new_node_kwargs: list[dict[str, Any]] | tuple[dict[str, Any]],
+        names: List[str] | Tuple[str],
+        new_node_types: List[type[Node]] | Tuple[type[Node]],
+        new_node_kwargs: List[Dict[str, Any]] | Tuple[Dict[str, Any]],
     ) -> BayesNet:
         nodes = dict(self.nodes)
         for i, name in enumerate(names):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from typing import Dict
 
 import numpy as np
 import pytest
@@ -34,7 +35,7 @@ normal_dict = {
 }
 
 
-more_complex_dict: dict[str, dict[str, Any]] = {
+more_complex_dict: Dict[str, Dict[str, Any]] = {
     "O": {"name": "O", "parents": ["E"], "children": ["T"]},
     "S": {"name": "S", "parents": [], "children": ["E"]},
     "R": {"name": "R", "parents": ["E"], "children": ["T"]},
