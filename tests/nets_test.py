@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import json
+from typing import Any
 
 import numpy as np
 import pytest
@@ -30,15 +33,15 @@ normal_dict = {
     },
 }
 
-more_complex_dict = {
+
+more_complex_dict: dict[str, dict[str, Any]] = {
     "O": {"name": "O", "parents": ["E"], "children": ["T"]},
     "S": {"name": "S", "parents": [], "children": ["E"]},
     "R": {"name": "R", "parents": ["E"], "children": ["T"]},
-    "A": {"name": "A", "parents": [], "children": ["E"]},
+    "A": {"name": "A", "parents": [], "children": ["E"], "prob_table": [0.1, 0.9]},
     "E": {"name": "E", "parents": ["A", "S"], "children": ["O", "R"]},
     "T": {"name": "T", "parents": ["O", "R"], "children": []},
 }
-
 
 vc = "tests/files/very_complex_dict.json"
 
@@ -78,6 +81,17 @@ cycle_dict = {
         "children": ["cloudy"],  # cycle
         "categories": ["wet", "dry"],
     },
+}
+
+more_complex_cycle_dict = {
+    "O": {"name": "O", "parents": ["E"], "children": ["T", "AA"]},
+    "AA": {"parents": ["O"]},
+    "S": {"name": "S", "parents": [], "children": ["E"]},
+    "R": {"name": "R", "parents": ["E"], "children": ["T"]},
+    "A": {"name": "A", "parents": [], "children": ["E"], "prob_table": [0.1, 0.9]},
+    "E": {"name": "E", "parents": ["A", "S"], "children": ["O", "R"]},
+    "T": {"name": "T", "parents": ["O", "R"], "children": ["EE", "R"]},
+    "EE": {"name": "EE", "parents": ["T"], "children": []},
 }
 
 missing_dict = {
@@ -133,6 +147,7 @@ def test_net_instantiation(params, expected):
     "params",
     (
         pytest.param(cycle_dict, id="cyclic dag"),
+        pytest.param(more_complex_cycle_dict, id="deeper recursive search for cycle"),
         pytest.param(
             dict(missing_dict), id="dag with parents/children that arent nodes"
         ),

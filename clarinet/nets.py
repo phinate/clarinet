@@ -36,18 +36,29 @@ class BayesNet(BaseModel):
     def dict_to_map(cls, dct: dict[str, Node]) -> Map[str, Node]:
         return Map(dct)
 
+    # this doesn't pick up cycles that occur when searching for node-centric cycles
+    # not to worry -- I think this is done easier through the link matrix impl
     @staticmethod
     def _recursive_cycle_check(
-        name: str, children: list[str], network_dict: dict[str, dict[str, Any]]
+        name: str,
+        children: list[str],
+        network_dict: dict[str, dict[str, Any]],
     ) -> None:
         for child in children:
             entry = network_dict[child]
             if "children" in entry.keys():
-                # will show first error based on order of nodes in dict
-                assert (
-                    name not in entry["children"]
-                ), f"Network has a cycle -- can cycle back to '{name}'!"
-                BayesNet._recursive_cycle_check(name, entry["children"], network_dict)
+                if entry["children"] != []:
+                    # will show first error based on order of nodes in dict
+                    assert (
+                        name not in entry["children"]
+                    ), f"Network has a cycle -- can cycle back to '{name}'!"
+                    BayesNet._recursive_cycle_check(
+                        name, entry["children"], network_dict
+                    )
+                else:
+                    print(name, child, children, "empty children")
+            else:
+                print(name, child, children, "children not in keys")
 
     @staticmethod
     def _validate_node(
@@ -158,10 +169,6 @@ class BayesNet(BaseModel):
         validation: bool = True,
         modelstring: str = "",
     ) -> BayesNet:
-        # validation step
-        # TODO: jsonschema
-        #         if validation:
-        #             validate_model_dict(network_dict)
         nodes: dict[str, Node] = {}
         for i, items in enumerate(network_dict.items()):
             name, node_dict = items
