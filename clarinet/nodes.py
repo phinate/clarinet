@@ -7,26 +7,26 @@ __all__ = [
 ]
 
 from pydantic import BaseModel, validator
-from typing import Any
+from typing import Any, Tuple, List, Dict
 
 import numpy as np
 
 
 class Node(BaseModel):
     name: str
-    parents: tuple[str, ...] = ()
-    children: tuple[str, ...] = ()
+    parents: Tuple[str, ...] = ()
+    children: Tuple[str, ...] = ()
 
     class Config:
         allow_mutation = False
 
     @validator("parents", "children")
-    def to_tuple(cls, v: Any) -> tuple[str, ...]:
+    def to_tuple(cls, v: Any) -> Tuple[str, ...]:
         return tuple(v)
 
     def add_parents(
         self,
-        parents: list[str] | tuple[str, ...],
+        parents: List[str] | Tuple[str, ...],
     ) -> Node:
         parents = list(parents) + list(self.parents)
         dct = self.dict()
@@ -35,7 +35,7 @@ class Node(BaseModel):
 
     def add_children(
         self,
-        children: list[str] | tuple[str, ...],
+        children: List[str] | Tuple[str, ...],
     ) -> Node:
         children = list(children) + list(self.children)
         dct = self.dict()
@@ -43,7 +43,7 @@ class Node(BaseModel):
         return self.__class__(**dct)
 
     @classmethod
-    def from_node(cls, node: Node, **node_kwargs: dict[str, Any]) -> Node:
+    def from_node(cls, node: Node, **node_kwargs: Dict[str, Any]) -> Node:
         return cls(**node.dict(), **node_kwargs)
 
 
@@ -61,13 +61,13 @@ class DiscreteNode(Node):
 
 
 class CategoricalNode(DiscreteNode):
-    categories: tuple[str, ...]
+    categories: Tuple[str, ...]
 
     class Config:
         allow_mutation = False
 
     @validator("categories", pre=True)
-    def category_val(cls, v: Any) -> tuple[str, ...]:
+    def category_val(cls, v: Any) -> Tuple[str, ...]:
         assert (type(v) == tuple) or (
             type(v) == list
         ), "Type of categories needs to be a list or tuple"
