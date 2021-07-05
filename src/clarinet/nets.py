@@ -2,17 +2,15 @@ from __future__ import annotations
 
 __all__ = ["BayesNet"]
 
+from functools import partial, singledispatchmethod
 from typing import Any, Dict, List, Tuple
 
-from functools import singledispatchmethod
-from pydantic import BaseModel, validator, root_validator
-
-from immutables import Map
-from functools import partial
 import numpy as np
+from immutables import Map
+from pydantic import BaseModel, root_validator, validator
 
-from .nodes import Node, CategoricalNode, DiscreteNode
 from .modelstring import Modelstring
+from .nodes import CategoricalNode, DiscreteNode, Node
 
 
 class BayesNet(BaseModel):
@@ -30,7 +28,7 @@ class BayesNet(BaseModel):
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:
-        return self.nodes[item]
+        return self.nodes[item]  # type: ignore
 
     @validator("nodes", pre=True)
     def dict_to_map(cls, dct: Dict[str, Node]) -> Map[str, Node]:
@@ -55,10 +53,6 @@ class BayesNet(BaseModel):
                     BayesNet._recursive_cycle_check(
                         name, entry["children"], network_dict
                     )
-                else:
-                    print(name, child, children, "empty children")
-            else:
-                print(name, child, children, "children not in keys")
 
     @staticmethod
     def _validate_node(
@@ -170,8 +164,8 @@ class BayesNet(BaseModel):
         modelstring: str = "",
     ) -> BayesNet:
         nodes: Dict[str, Node] = {}
-        for i, items in enumerate(network_dict.items()):
-            name, node_dict = items
+        for item in network_dict.items():
+            name, node_dict = item
             if "name" not in node_dict.keys():
                 node_dict["name"] = name
             # special casing

@@ -1,6 +1,5 @@
 import pytest
-from pydantic import BaseModel
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from clarinet import Modelstring
 

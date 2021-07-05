@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 modelstring_regex = re.compile(
     r"((\[[\w *]+\|\w+[\w ]*(:\w+[\w ]*)*\])|(\[[\w *]+\]))+", re.IGNORECASE

@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from typing import Dict
 
 import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from clarinet import BayesNet
-from clarinet import CategoricalNode
-from clarinet import DiscreteNode
-from clarinet import Node
+from clarinet import BayesNet, CategoricalNode, DiscreteNode, Node
 
 # make sure to use every node type in every example where possible
 # add prob tables later
@@ -35,7 +31,7 @@ normal_dict = {
 }
 
 
-more_complex_dict: Dict[str, Dict[str, Any]] = {
+more_complex_dict: dict[str, dict[str, Any]] = {
     "O": {"name": "O", "parents": ["E"], "children": ["T"]},
     "S": {"name": "S", "parents": [], "children": ["E"]},
     "R": {"name": "R", "parents": ["E"], "children": ["T"]},

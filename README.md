@@ -1,24 +1,32 @@
-# clarinet 🎷*
+# clarinet
 
-![tests](https://github.com/phinate/clarinet/workflows/tests/badge.svg) [![codecov](https://codecov.io/gh/phinate/clarinet/branch/main/graph/badge.svg?token=ZBHFNPEP9R)](https://codecov.io/gh/phinate/clarinet) [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/phinate/clarinet/main.svg)](https://results.pre-commit.ci/latest/github/phinate/clarinet/main)
+[![Actions Status][actions-badge]][actions-link]
+[![codecov](https://codecov.io/gh/phinate/clarinet/branch/main/graph/badge.svg?token=ZBHFNPEP9R)](https://codecov.io/gh/phinate/clarinet) [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/phinate/clarinet/main.svg)](https://results.pre-commit.ci/latest/github/phinate/clarinet/main)
+[![Documentation Status][rtd-badge]][rtd-link]
+[![Code style: black][black-badge]][black-link]
+
+[![PyPI version][pypi-version]][pypi-link]
+[![PyPI platforms][pypi-platforms]][pypi-link]
+
+[![GitHub Discussion][github-discussions-badge]][github-discussions-link]
 
 *pending existence of clarinet emoji. for now, enjoy this rad sax.
 
-A functional implementation of probabilistic networks.
+Soon-to-be jax-backed probabilistic graphical model utilities!
 
 ** Note: This project is in pre-alpha, so expect the whole thing to be one sharp edge. **
 
 ## usage:
 
-Here's a basic look at the DAG-making functionality. Keep in mind that all methods return a modified copy of the original object to avoid the headaches that come with mutated internal states :)
+Here's a basic look at the DAG-making functionality:
 
 ```py
 
-import clarinet as cn
+from clarinet import BayesNet
 
 
 # bnlearn-style modelstring init
-cn.BayesNet.from_modelstring("[A][C][B|A][D|C][F|A:B:C][E|F]")
+BayesNet.from_modelstring("[A][C][B|A][D|C][F|A:B:C][E|F]")
 #> BayesNet(
 #    nodes=<immutables.Map(
 #        {
@@ -48,7 +56,7 @@ example_model_dict = {
     },
 }
 
-net = cn.BayesNet.from_dict(example_model_dict)
+net = BayesNet.from_dict(example_model_dict)
 net
 #> BayesNet(
 #    nodes=<immutables.Map(
@@ -85,3 +93,24 @@ net.convert_nodes(
 #    }, modelstring=''
 #)
 ```
+
+
+
+[actions-badge]:            https://github.com/phinate/clarinet/workflows/CI/badge.svg
+[actions-link]:             https://github.com/phinate/clarinet/actions
+[black-badge]:              https://img.shields.io/badge/code%20style-black-000000.svg
+[black-link]:               https://github.com/psf/black
+[conda-badge]:              https://img.shields.io/conda/vn/conda-forge/clarinet
+[conda-link]:               https://github.com/conda-forge/clarinet-feedstock
+[codecov-badge]:            https://app.codecov.io/gh/phinate/clarinet/branch/main/graph/badge.svg
+[codecov-link]:             https://app.codecov.io/gh/phinate/clarinet
+[github-discussions-badge]: https://img.shields.io/static/v1?label=Discussions&message=Ask&color=blue&logo=github
+[github-discussions-link]:  https://github.com/phinate/clarinet/discussions
+[gitter-badge]:             https://badges.gitter.im/https://github.com/phinate/clarinet/community.svg
+[gitter-link]:              https://gitter.im/https://github.com/phinate/clarinet/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+[pypi-link]:                https://pypi.org/project/clarinet/
+[pypi-platforms]:           https://img.shields.io/pypi/pyversions/clarinet
+[pypi-version]:             https://badge.fury.io/py/clarinet.svg
+[rtd-badge]:                https://readthedocs.org/projects/clarinet/badge/?version=latest
+[rtd-link]:                 https://clarinet.readthedocs.io/en/latest/?badge=latest
+[sk-badge]:                 https://scikit-hep.org/assets/images/Scikit--HEP-Project-blue.svg

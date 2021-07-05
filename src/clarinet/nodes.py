@@ -6,10 +6,10 @@ __all__ = [
     "CategoricalNode",
 ]
 
-from pydantic import BaseModel, validator
-from typing import Any, Tuple, List, Dict
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
+from pydantic import BaseModel, validator
 
 
 class Node(BaseModel):

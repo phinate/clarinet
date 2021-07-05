@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 
-from clarinet import DiscreteNode
-from clarinet import Node
+from clarinet import DiscreteNode, Node
 
 name = "test_name"
 
