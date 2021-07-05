@@ -139,4 +139,4 @@ dmypy.json
 cython_debug/
 
 # setuptools_scm
-src/*/version.py
+src/*/_version.py
