@@ -1,21 +1,24 @@
 # things to implement:
 
-*note*: no core functionality exists for statistics yet! soon to be added :3
+## model import/export
+- include ability to go to/from HBNet models
+- add probability tables to schema
+    - make sure to be careful to get the dimensions right! see jax named tensors: https://jax.readthedocs.io/en/latest/notebooks/xmap_tutorial.html
 
 ## algorithms:
 - variable elimination for inference over discrete networks
 - hook into probprog under the hood for approx inference (long-term ambition)
+    - `numpyro` would be a nice choice for this -- need to figure out how to map the appropriate inference method to the corresponding pyro semantic
 
 ## nets:
 - add validation routines as pydantic validators
-    - to skip validation, use model.copy!
-- ~automatically generate modelstring from node map~
+    - need to refactor cycle checking using adjacency matrix
 - use a lib that displays PGMs, e.g.
     - [`daft`](https://docs.daft-pgm.org/en/latest/)
         - pros: nice style, lightweight
         - cons: no algorithm for node layouts (could implement later on)
     - [`graphviz`](https://github.com/xflr6/graphviz)
-        - pros: seems to have all needed functionality
+        - pros: seems to have all needed functionality, integrated into `numpyro` utils
         - cons: requires additional binary, can't include as dependency
 
 ## nodes:
