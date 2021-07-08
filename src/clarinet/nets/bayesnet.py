@@ -3,9 +3,9 @@ from __future__ import annotations
 __all__ = ["BayesNet"]
 
 from functools import partial, singledispatchmethod
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence, no_type_check
 
-from chex import DeviceArray
+from chex import Array
 from immutables import Map
 from pydantic import BaseModel, root_validator, validator
 
@@ -23,7 +23,7 @@ class BayesNet(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
-            DeviceArray: lambda t: t.tolist(),
+            Array: lambda t: t.tolist(),
         }
         keep_untouched = (singledispatchmethod,)
 
@@ -214,22 +214,24 @@ class BayesNet(BaseModel):
             BayesNet._validate_node(name, net_dct[name], net_dct)
         return self.copy(update={"nodes": nodes})
 
+    @no_type_check
     @singledispatchmethod
     def add_prob_tables(
         self,
-        names: Any,
+        names,
         tables: Sequence[Any],
-        categories: Sequence[Any] | None = None,
-    ) -> BayesNet:
+        categories: Optional[Sequence[Any]] = None,
+    ):
         pass
 
+    @no_type_check
     @add_prob_tables.register
     def single_name(
         self,
         names: str,
         tables: Sequence[Any],
-        categories: Sequence[Any] | None = None,
-    ) -> BayesNet:
+        categories: Optional[Sequence[Any]] = None,
+    ):
         new_node_types: List[type[Node]] = []
 
         is_categorical = type(self.nodes[names]) == CategoricalNode
@@ -237,7 +239,7 @@ class BayesNet(BaseModel):
             new_node_types.append(CategoricalNode)
         elif is_categorical:  # definitely categorical here
             new_node_types.append(CategoricalNode)
-            categories = self.nodes[names].categories  # type: ignore
+            categories = self.nodes[names].categories
         else:
             new_node_types.append(DiscreteNode)
         if categories:
@@ -252,13 +254,14 @@ class BayesNet(BaseModel):
             names, new_node_types=new_node_types, new_node_kwargs=new_node_kwargs
         )
 
+    @no_type_check
     @add_prob_tables.register
     def multi_name(
         self,
-        names: Sequence[str],
+        names: list,
         tables: Sequence[Any],
-        categories: Sequence[Any] | None = None,
-    ) -> BayesNet:
+        categories: Optional[Sequence[Any]] = None,
+    ):
         new_node_types: List[Any] = []
         if categories:
             new_categories = list(categories)
@@ -269,7 +272,7 @@ class BayesNet(BaseModel):
             if is_categorical:
                 new_node_types.append(CategoricalNode)
                 if categories:
-                    new_categories[i] = self.nodes[name].categories  # type: ignore
+                    new_categories[i] = self.nodes[name].categories
             elif categories:
                 if new_categories[i] is not None:
                     new_node_types.append(CategoricalNode)

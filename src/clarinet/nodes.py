@@ -9,7 +9,7 @@ __all__ = [
 from typing import Any, Dict, List, Tuple
 
 import jax.numpy as jnp
-from chex import DeviceArray
+from chex import Array
 from pydantic import BaseModel, validator
 
 
@@ -49,15 +49,15 @@ class Node(BaseModel):
 
 
 class DiscreteNode(Node):
-    prob_table: DeviceArray = jnp.array([])
+    prob_table: Array = jnp.array([])
 
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {DeviceArray: lambda t: t.tolist()}  # for self.json()
+        json_encoders = {Array: lambda t: t.tolist()}  # for self.json()
 
     @validator("prob_table", pre=True)
-    def to_array(cls, arr: Any) -> DeviceArray:
+    def to_array(cls, arr: Any) -> Array:
         return jnp.asarray(arr)
 
 
