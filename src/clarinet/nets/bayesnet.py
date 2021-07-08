@@ -3,14 +3,14 @@ from __future__ import annotations
 __all__ = ["BayesNet"]
 
 from functools import partial, singledispatchmethod
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence
 
-import numpy as np
+from chex import DeviceArray
 from immutables import Map
 from pydantic import BaseModel, root_validator, validator
 
-from .modelstring import Modelstring
-from .nodes import CategoricalNode, DiscreteNode, Node
+from ..modelstring import Modelstring
+from ..nodes import CategoricalNode, DiscreteNode, Node
 
 
 class BayesNet(BaseModel):
@@ -23,12 +23,12 @@ class BayesNet(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
-            np.ndarray: lambda t: t.tolist(),
+            DeviceArray: lambda t: t.tolist(),
         }
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:
-        return self.nodes[item]  # type: ignore
+        return self.nodes[item]
 
     @validator("nodes", pre=True)
     def dict_to_map(cls, dct: Dict[str, Node]) -> Map[str, Node]:
@@ -39,7 +39,7 @@ class BayesNet(BaseModel):
     @staticmethod
     def _recursive_cycle_check(
         name: str,
-        children: List[str],
+        children: Sequence[str],
         network_dict: Dict[str, Dict[str, Any]],
     ) -> None:
         for child in children:
@@ -129,18 +129,18 @@ class BayesNet(BaseModel):
             cycle_check(name, children)
 
     @staticmethod
-    def _nodes_to_dict(nodes: Dict[str, Node]) -> Dict[str, Dict[str, Any]]:
+    def _nodes_to_dict(nodes: Map[str, Node]) -> Dict[str, Dict[str, Any]]:
         vals = []
         for n in nodes.values():
             vals.append(n.dict())
         return {v["name"]: v for v in vals}
 
     @validator("nodes", pre=True)
-    def validate_model_dict(nodes: Map[str, Node]) -> Map[str, Any]:
+    def validate_model_dict(cls, nodes: Map[str, Node]) -> Map[str, Any]:
         assert len(nodes.keys()) == len(set(nodes.keys())), "Duplicate nodes found!"
 
-        network_dict = BayesNet._nodes_to_dict(nodes)
-        node_check = partial(BayesNet._validate_node, network_dict=network_dict)
+        network_dict = cls._nodes_to_dict(nodes)
+        node_check = partial(cls._validate_node, network_dict=network_dict)
 
         for name, node in network_dict.items():
             node_check(name, node)
@@ -160,7 +160,6 @@ class BayesNet(BaseModel):
     def from_dict(
         cls,
         network_dict: Dict[str, Dict[str, Any]],
-        validation: bool = True,
         modelstring: str = "",
     ) -> BayesNet:
         nodes: Dict[str, Node] = {}
@@ -197,20 +196,97 @@ class BayesNet(BaseModel):
             node_dct[child] = node_dct[child].add_parents([name])
         for parent in node.parents:
             node_dct[parent] = node_dct[parent].add_children([name])
-        dct = BayesNet._nodes_to_dict(node_dct)
+        dct = BayesNet._nodes_to_dict(Map(node_dct))
         BayesNet._validate_node(name, node.dict(), network_dict=dct)
         return self.copy(update={"nodes": node_dct})
 
     def convert_nodes(
         self,
-        names: List[str] | Tuple[str],
-        new_node_types: List[type[Node]] | Tuple[type[Node]],
-        new_node_kwargs: List[Dict[str, Any]] | Tuple[Dict[str, Any]],
+        names: Sequence[str],
+        new_node_types: Sequence[type[Node]],
+        new_node_kwargs: Sequence[Dict[str, Any]],
     ) -> BayesNet:
         nodes = dict(self.nodes)
         for i, name in enumerate(names):
             nodes[name] = new_node_types[i].from_node(nodes[name], **new_node_kwargs[i])
-        net_dct = BayesNet._nodes_to_dict(nodes)
+        net_dct = BayesNet._nodes_to_dict(Map(nodes))
         for name in names:
             BayesNet._validate_node(name, net_dct[name], net_dct)
         return self.copy(update={"nodes": nodes})
+
+    @singledispatchmethod
+    def add_prob_tables(
+        self,
+        names: Any,
+        tables: Sequence[Any],
+        categories: Sequence[Any] | None = None,
+    ) -> BayesNet:
+        pass
+
+    @add_prob_tables.register
+    def single_name(
+        self,
+        names: str,
+        tables: Sequence[Any],
+        categories: Sequence[Any] | None = None,
+    ) -> BayesNet:
+        new_node_types: List[type[Node]] = []
+
+        is_categorical = type(self.nodes[names]) == CategoricalNode
+        if categories:
+            new_node_types.append(CategoricalNode)
+        elif is_categorical:  # definitely categorical here
+            new_node_types.append(CategoricalNode)
+            categories = self.nodes[names].categories  # type: ignore
+        else:
+            new_node_types.append(DiscreteNode)
+        if categories:
+            new_node_kwargs = [dict(prob_table=tables, categories=categories)]
+        else:
+            new_node_kwargs = [
+                dict(
+                    prob_table=tables,
+                )
+            ]
+        return self.convert_nodes(
+            names, new_node_types=new_node_types, new_node_kwargs=new_node_kwargs
+        )
+
+    @add_prob_tables.register
+    def multi_name(
+        self,
+        names: Sequence[str],
+        tables: Sequence[Any],
+        categories: Sequence[Any] | None = None,
+    ) -> BayesNet:
+        new_node_types: List[Any] = []
+        if categories:
+            new_categories = list(categories)
+
+        for i, name in enumerate(names):
+            is_categorical = type(self.nodes[name]) == CategoricalNode
+
+            if is_categorical:
+                new_node_types.append(CategoricalNode)
+                if categories:
+                    new_categories[i] = self.nodes[name].categories  # type: ignore
+            elif categories:
+                if new_categories[i] is not None:
+                    new_node_types.append(CategoricalNode)
+            else:
+                new_node_types.append(DiscreteNode)
+        if categories:
+            new_node_kwargs = [
+                dict(prob_table=table, categories=category)
+                for table, category in zip(tables, categories)
+            ]
+        else:
+            new_node_kwargs = [
+                dict(
+                    prob_table=table,
+                )
+                for table in tables
+            ]
+        return self.convert_nodes(
+            names, new_node_types=new_node_types, new_node_kwargs=new_node_kwargs
+        )
