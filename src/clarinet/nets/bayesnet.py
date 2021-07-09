@@ -237,7 +237,7 @@ class BayesNet(BaseModel):
         is_categorical = type(self.nodes[names]) == CategoricalNode
         if categories:
             new_node_types.append(CategoricalNode)
-        elif is_categorical:  # definitely categorical here
+        elif is_categorical:
             new_node_types.append(CategoricalNode)
             categories = self.nodes[names].categories
         else:
@@ -262,7 +262,7 @@ class BayesNet(BaseModel):
         tables: Sequence[Any],
         categories: Optional[Sequence[Any]] = None,
     ):
-        new_node_types: List[Any] = []
+        new_node_types: List[Any] = [None] * len(names)
         if categories:
             new_categories = list(categories)
 
@@ -270,14 +270,17 @@ class BayesNet(BaseModel):
             is_categorical = type(self.nodes[name]) == CategoricalNode
 
             if is_categorical:
-                new_node_types.append(CategoricalNode)
+                new_node_types[i] = CategoricalNode
                 if categories:
                     new_categories[i] = self.nodes[name].categories
             elif categories:
                 if new_categories[i] is not None:
-                    new_node_types.append(CategoricalNode)
+                    new_node_types[i] = CategoricalNode
+                else:
+                    new_categories[i] = []
+                    new_node_types[i] = DiscreteNode
             else:
-                new_node_types.append(DiscreteNode)
+                new_node_types[i] = DiscreteNode
         if categories:
             new_node_kwargs = [
                 dict(prob_table=table, categories=category)
