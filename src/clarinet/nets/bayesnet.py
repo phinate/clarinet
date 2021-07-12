@@ -23,7 +23,7 @@ class BayesNet(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
-            npt.NDArray: lambda t: t.tolist(),
+            npt.NDArray[Any]: lambda t: t.tolist(),
         }
         keep_untouched = (singledispatchmethod,)
 

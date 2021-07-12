@@ -54,7 +54,7 @@ class BaseDiscrete(Node):
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {npt.NDArray: lambda t: t.tolist()}  # for self.json()
+        json_encoders = {npt.NDArray[Any]: lambda t: t.tolist()}  # for self.json()
 
     @validator("prob_table", pre=True)
     def to_array(cls, arr: npt.ArrayLike) -> npt.NDArray[Any]:
