@@ -3,14 +3,14 @@ from __future__ import annotations
 __all__ = ["BayesNet"]
 
 from functools import partial, singledispatchmethod
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Sequence, no_type_check
 
 import numpy as np
 from immutables import Map
 from pydantic import BaseModel, root_validator, validator
 
-from .modelstring import Modelstring
-from .nodes import CategoricalNode, DiscreteNode, Node
+from ..modelstring import Modelstring
+from ..nodes import BaseDiscrete, DiscreteNode, Node
 
 
 class BayesNet(BaseModel):
@@ -28,7 +28,7 @@ class BayesNet(BaseModel):
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:
-        return self.nodes[item]  # type: ignore
+        return self.nodes[item]
 
     @validator("nodes", pre=True)
     def dict_to_map(cls, dct: Dict[str, Node]) -> Map[str, Node]:
@@ -39,7 +39,7 @@ class BayesNet(BaseModel):
     @staticmethod
     def _recursive_cycle_check(
         name: str,
-        children: List[str],
+        children: Sequence[str],
         network_dict: Dict[str, Dict[str, Any]],
     ) -> None:
         for child in children:
@@ -129,18 +129,18 @@ class BayesNet(BaseModel):
             cycle_check(name, children)
 
     @staticmethod
-    def _nodes_to_dict(nodes: Dict[str, Node]) -> Dict[str, Dict[str, Any]]:
+    def _nodes_to_dict(nodes: Map[str, Node]) -> Dict[str, Dict[str, Any]]:
         vals = []
         for n in nodes.values():
             vals.append(n.dict())
         return {v["name"]: v for v in vals}
 
     @validator("nodes", pre=True)
-    def validate_model_dict(nodes: Map[str, Node]) -> Map[str, Any]:
+    def validate_model_dict(cls, nodes: Map[str, Node]) -> Map[str, Any]:
         assert len(nodes.keys()) == len(set(nodes.keys())), "Duplicate nodes found!"
 
-        network_dict = BayesNet._nodes_to_dict(nodes)
-        node_check = partial(BayesNet._validate_node, network_dict=network_dict)
+        network_dict = cls._nodes_to_dict(nodes)
+        node_check = partial(cls._validate_node, network_dict=network_dict)
 
         for name, node in network_dict.items():
             node_check(name, node)
@@ -160,7 +160,6 @@ class BayesNet(BaseModel):
     def from_dict(
         cls,
         network_dict: Dict[str, Dict[str, Any]],
-        validation: bool = True,
         modelstring: str = "",
     ) -> BayesNet:
         nodes: Dict[str, Node] = {}
@@ -169,10 +168,10 @@ class BayesNet(BaseModel):
             if "name" not in node_dict.keys():
                 node_dict["name"] = name
             # special casing
-            if "categories" in node_dict.keys():
-                nodes[name] = CategoricalNode(**node_dict)
-            elif "prob_table" in node_dict.keys():
+            if "states" in node_dict.keys():
                 nodes[name] = DiscreteNode(**node_dict)
+            elif "prob_table" in node_dict.keys():
+                nodes[name] = BaseDiscrete(**node_dict)
             else:
                 nodes[name] = Node(**node_dict)
             # display_text = node.display_text or name  # TODO daft
@@ -197,20 +196,103 @@ class BayesNet(BaseModel):
             node_dct[child] = node_dct[child].add_parents([name])
         for parent in node.parents:
             node_dct[parent] = node_dct[parent].add_children([name])
-        dct = BayesNet._nodes_to_dict(node_dct)
+        dct = BayesNet._nodes_to_dict(Map(node_dct))
         BayesNet._validate_node(name, node.dict(), network_dict=dct)
         return self.copy(update={"nodes": node_dct})
 
     def convert_nodes(
         self,
-        names: List[str] | Tuple[str],
-        new_node_types: List[type[Node]] | Tuple[type[Node]],
-        new_node_kwargs: List[Dict[str, Any]] | Tuple[Dict[str, Any]],
+        names: Sequence[str],
+        new_node_types: Sequence[type[Node]],
+        new_node_kwargs: Sequence[Dict[str, Any]],
     ) -> BayesNet:
         nodes = dict(self.nodes)
         for i, name in enumerate(names):
             nodes[name] = new_node_types[i].from_node(nodes[name], **new_node_kwargs[i])
-        net_dct = BayesNet._nodes_to_dict(nodes)
+        net_dct = BayesNet._nodes_to_dict(Map(nodes))
         for name in names:
             BayesNet._validate_node(name, net_dct[name], net_dct)
         return self.copy(update={"nodes": nodes})
+
+    @no_type_check
+    @singledispatchmethod
+    def add_prob_tables(
+        self,
+        names,
+        tables: Sequence[Any],
+        states: Optional[Sequence[Any]] = None,
+    ):
+        pass
+
+    @no_type_check
+    @add_prob_tables.register
+    def single_name(
+        self,
+        names: str,
+        tables: Sequence[Any],
+        states: Optional[Sequence[Any]] = None,
+    ):
+        new_node_types: List[type[Node]] = []
+
+        is_categorical = type(self.nodes[names]) == DiscreteNode
+        if states:
+            new_node_types.append(DiscreteNode)
+        elif is_categorical:
+            new_node_types.append(DiscreteNode)
+            states = self.nodes[names].states
+        else:
+            new_node_types.append(BaseDiscrete)
+        if states:
+            new_node_kwargs = [dict(prob_table=tables, states=states)]
+        else:
+            new_node_kwargs = [
+                dict(
+                    prob_table=tables,
+                )
+            ]
+        return self.convert_nodes(
+            names, new_node_types=new_node_types, new_node_kwargs=new_node_kwargs
+        )
+
+    @no_type_check
+    @add_prob_tables.register
+    def multi_name(
+        self,
+        names: list,
+        tables: Sequence[Any],
+        states: Optional[Sequence[Any]] = None,
+    ):
+        new_node_types: List[Any] = [None] * len(names)
+        if states:
+            new_states = list(states)
+
+        for i, name in enumerate(names):
+            is_categorical = type(self.nodes[name]) == DiscreteNode
+
+            if is_categorical:
+                new_node_types[i] = DiscreteNode
+                if states:
+                    new_states[i] = self.nodes[name].states
+            elif states:
+                if new_states[i] is not None:
+                    new_node_types[i] = DiscreteNode
+                else:
+                    new_states[i] = []
+                    new_node_types[i] = BaseDiscrete
+            else:
+                new_node_types[i] = BaseDiscrete
+        if states:
+            new_node_kwargs = [
+                dict(prob_table=table, states=state)
+                for table, state in zip(tables, states)
+            ]
+        else:
+            new_node_kwargs = [
+                dict(
+                    prob_table=table,
+                )
+                for table in tables
+            ]
+        return self.convert_nodes(
+            names, new_node_types=new_node_types, new_node_kwargs=new_node_kwargs
+        )

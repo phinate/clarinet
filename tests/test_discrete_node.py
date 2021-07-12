@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from clarinet import DiscreteNode, Node
+from clarinet import BaseDiscrete, Node
 
 name = "test_name"
 
@@ -24,7 +24,7 @@ name = "test_name"
 )
 def test_basic_functionality(prob_table, expected_prob_table):
     parents, children = ["A", "B"], ["C", "D"]
-    x = DiscreteNode(
+    x = BaseDiscrete(
         name=name, parents=parents, children=children, prob_table=prob_table
     )
     assert np.allclose(x.dict()["prob_table"], expected_prob_table)
@@ -38,4 +38,4 @@ def test_prob_table():
 def test_from_node():
     n = Node(name=name, parents=["F"])  # arbitrary
     prob_table = np.array([[0.3, 0.7], [0.7, 0.3]])
-    DiscreteNode.from_node(n, prob_table=prob_table)
+    BaseDiscrete.from_node(n, prob_table=prob_table)

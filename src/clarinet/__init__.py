@@ -1,8 +1,8 @@
 __all__ = [
     "__version__",
     "BayesNet",
-    "CategoricalNode",
     "DiscreteNode",
+    "BaseDiscrete",
     "Node",
     "Modelstring",
 ]
@@ -10,4 +10,4 @@ __all__ = [
 from ._version import version as __version__
 from .modelstring import Modelstring
 from .nets import BayesNet
-from .nodes import CategoricalNode, DiscreteNode, Node
+from .nodes import BaseDiscrete, DiscreteNode, Node

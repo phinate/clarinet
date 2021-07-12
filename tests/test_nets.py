@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from clarinet import BayesNet, CategoricalNode, DiscreteNode, Node
+from clarinet import BaseDiscrete, BayesNet, DiscreteNode, Node
 
 # make sure to use every node type in every example where possible
 # add prob tables later
@@ -18,15 +18,15 @@ normal_dict = {
     "raining": {
         "parents": ["cloudy"],
         "children": ["wet grass"],
-        "categories": ["raining", "not raining"],
+        "states": ["raining", "not raining"],
     },
     "cloudy": {
         "children": ["raining"],
-        "categories": ["cloudy", "clear"],
+        "states": ["cloudy", "clear"],
     },
     "wet grass": {
         "parents": ["raining"],
-        "categories": ["wet", "dry"],
+        "states": ["wet", "dry"],
     },
 }
 
@@ -67,16 +67,16 @@ cycle_dict = {
     "raining": {
         "parents": ["cloudy"],
         "children": ["wet grass"],
-        "categories": ["raining", "not raining"],
+        "states": ["raining", "not raining"],
     },
     "cloudy": {
         "children": ["raining"],
-        "categories": ["cloudy", "clear"],
+        "states": ["cloudy", "clear"],
     },
     "wet grass": {
         "parents": ["raining"],
         "children": ["cloudy"],  # cycle
-        "categories": ["wet", "dry"],
+        "states": ["wet", "dry"],
     },
 }
 
@@ -95,15 +95,15 @@ missing_dict = {
     "raining": {
         "parents": ["cloudy"],
         "children": ["wet grass"],
-        "categories": ["raining", "not raining"],
+        "states": ["raining", "not raining"],
     },
     "cloudy": {
         "children": ["raining"],
-        "categories": ["cloudy", "clear"],
+        "states": ["cloudy", "clear"],
     },
     "wet grass": {
         "parents": ["raining", "yeet skeet"],
-        "categories": ["wet", "dry"],
+        "states": ["wet", "dry"],
     },
 }
 
@@ -117,7 +117,7 @@ missing_dict = {
         pytest.param(
             normal_dict,
             normal_dict,
-            id="simple dag structure with categories",
+            id="simple dag structure with states",
         ),
         pytest.param(
             more_complex_dict,
@@ -196,13 +196,13 @@ def test_from_modelstring_fail_no_node():
         pytest.param(Node, dict(name="B", parents=["A"]), id="test adding child"),
         pytest.param(Node, dict(name="B", children=["A"]), id="test adding parent"),
         pytest.param(
-            DiscreteNode,
+            BaseDiscrete,
             dict(name="B", parents=["A"], prob_table=[0.1, 0.9]),
             id="discrete case",
         ),
         pytest.param(
-            CategoricalNode,
-            dict(name="B", parents=["A"], categories=["yes", "no"]),
+            DiscreteNode,
+            dict(name="B", parents=["A"], states=["yes", "no"]),
             id="categorical case",
         ),
     ),
@@ -219,14 +219,14 @@ def test_modify_nodes():
 
     net = net.convert_nodes(
         names=["O", "S"],
-        new_node_types=[CategoricalNode, DiscreteNode],
+        new_node_types=[DiscreteNode, BaseDiscrete],
         new_node_kwargs=[
-            dict(categories=["A", "B"]),
+            dict(states=["A", "B"]),
             dict(prob_table=[0.9, 0.1]),
         ],
     )
 
-    assert net["O"].categories == ("A", "B")
+    assert net["O"].states == ("A", "B")
     assert np.allclose(net["S"].prob_table, np.array([0.9, 0.1]))
 
 
@@ -236,9 +236,9 @@ def test_modify_nodes_validation_error():
         net.convert_nodes(
             names=["O"],
             new_node_types=[
-                CategoricalNode,
+                DiscreteNode,
             ],
             new_node_kwargs=[
-                dict(categories=2),
+                dict(states=2),
             ],
         )
