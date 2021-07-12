@@ -45,7 +45,7 @@ example_model_dict = {
     "raining": {
         "parents": ["cloudy"],
         "children": ["wet grass"],
-        "categories": ["raining", "not raining"],
+        "states": ["raining", "not raining"],
     },
     "cloudy": {
         "children": ["raining"],
@@ -62,7 +62,7 @@ net
 #        {
 #            'wet grass': Node(name='wet grass', parents=('raining',), children=()),
 #            'cloudy': Node(name='cloudy', parents=(), children=('raining',)),
-#            'raining': CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
+#            'raining': DiscreteNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), states=('raining', 'not raining'))
 #        }
 #    ) at 0x16a6b2100>, modelstring=''
 #)
@@ -70,25 +70,25 @@ net
 
 # index into the network by name to look at a particular node
 net["raining"]
-#> CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
+#> DiscreteNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), states=('raining', 'not raining'))
 
-# let's add some category names that we forgot!
+# let's add some state names that we forgot!
 net.convert_nodes(
     names=["wet grass", "cloudy"],
     new_node_types=[
-        cn.CategoricalNode,
-        cn.CategoricalNode
+        cn.DiscreteNode,
+        cn.DiscreteNode
     ],
     new_node_kwargs=[
-        dict(categories=["wet", "dry"]),
-        dict(categories=["cloudy", "clear"]),
+        dict(states=["wet", "dry"]),
+        dict(states=["cloudy", "clear"]),
     ]
 )
 #> BayesNet(
 #    nodes={
-#        'wet grass': CategoricalNode(name='wet grass', parents=('raining',), children=(), prob_table=array([], dtype=float32), categories=('wet', 'dry')),
-#        'cloudy': CategoricalNode(name='cloudy', parents=(), children=('raining',), prob_table=array([], dtype=float32), categories=('cloudy', 'clear')),
-#        'raining': CategoricalNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), categories=('raining', 'not raining'))
+#        'wet grass': DiscreteNode(name='wet grass', parents=('raining',), children=(), prob_table=array([], dtype=float32), states=('wet', 'dry')),
+#        'cloudy': DiscreteNode(name='cloudy', parents=(), children=('raining',), prob_table=array([], dtype=float32), states=('cloudy', 'clear')),
+#        'raining': DiscreteNode(name='raining', parents=('cloudy',), children=('wet grass',), prob_table=array([], dtype=float32), states=('raining', 'not raining'))
 #    }, modelstring=''
 #)
 ```

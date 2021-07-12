@@ -5,12 +5,12 @@ __all__ = ["BayesNet"]
 from functools import partial, singledispatchmethod
 from typing import Any, Dict, List, Optional, Sequence, no_type_check
 
-from chex import Array
+import numpy.typing as npt
 from immutables import Map
 from pydantic import BaseModel, root_validator, validator
 
 from ..modelstring import Modelstring
-from ..nodes import CategoricalNode, DiscreteNode, Node
+from ..nodes import BaseDiscrete, DiscreteNode, Node
 
 
 class BayesNet(BaseModel):
@@ -23,7 +23,7 @@ class BayesNet(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
-            Array: lambda t: t.tolist(),
+            npt.NDArray: lambda t: t.tolist(),
         }
         keep_untouched = (singledispatchmethod,)
 
@@ -168,10 +168,10 @@ class BayesNet(BaseModel):
             if "name" not in node_dict.keys():
                 node_dict["name"] = name
             # special casing
-            if "categories" in node_dict.keys():
-                nodes[name] = CategoricalNode(**node_dict)
-            elif "prob_table" in node_dict.keys():
+            if "states" in node_dict.keys():
                 nodes[name] = DiscreteNode(**node_dict)
+            elif "prob_table" in node_dict.keys():
+                nodes[name] = BaseDiscrete(**node_dict)
             else:
                 nodes[name] = Node(**node_dict)
             # display_text = node.display_text or name  # TODO daft
@@ -220,7 +220,7 @@ class BayesNet(BaseModel):
         self,
         names,
         tables: Sequence[Any],
-        categories: Optional[Sequence[Any]] = None,
+        states: Optional[Sequence[Any]] = None,
     ):
         pass
 
@@ -230,20 +230,20 @@ class BayesNet(BaseModel):
         self,
         names: str,
         tables: Sequence[Any],
-        categories: Optional[Sequence[Any]] = None,
+        states: Optional[Sequence[Any]] = None,
     ):
         new_node_types: List[type[Node]] = []
 
-        is_categorical = type(self.nodes[names]) == CategoricalNode
-        if categories:
-            new_node_types.append(CategoricalNode)
-        elif is_categorical:
-            new_node_types.append(CategoricalNode)
-            categories = self.nodes[names].categories
-        else:
+        is_categorical = type(self.nodes[names]) == DiscreteNode
+        if states:
             new_node_types.append(DiscreteNode)
-        if categories:
-            new_node_kwargs = [dict(prob_table=tables, categories=categories)]
+        elif is_categorical:
+            new_node_types.append(DiscreteNode)
+            states = self.nodes[names].states
+        else:
+            new_node_types.append(BaseDiscrete)
+        if states:
+            new_node_kwargs = [dict(prob_table=tables, states=states)]
         else:
             new_node_kwargs = [
                 dict(
@@ -260,31 +260,31 @@ class BayesNet(BaseModel):
         self,
         names: list,
         tables: Sequence[Any],
-        categories: Optional[Sequence[Any]] = None,
+        states: Optional[Sequence[Any]] = None,
     ):
         new_node_types: List[Any] = [None] * len(names)
-        if categories:
-            new_categories = list(categories)
+        if states:
+            new_states = list(states)
 
         for i, name in enumerate(names):
-            is_categorical = type(self.nodes[name]) == CategoricalNode
+            is_categorical = type(self.nodes[name]) == DiscreteNode
 
             if is_categorical:
-                new_node_types[i] = CategoricalNode
-                if categories:
-                    new_categories[i] = self.nodes[name].categories
-            elif categories:
-                if new_categories[i] is not None:
-                    new_node_types[i] = CategoricalNode
-                else:
-                    new_categories[i] = []
-                    new_node_types[i] = DiscreteNode
-            else:
                 new_node_types[i] = DiscreteNode
-        if categories:
+                if states:
+                    new_states[i] = self.nodes[name].states
+            elif states:
+                if new_states[i] is not None:
+                    new_node_types[i] = DiscreteNode
+                else:
+                    new_states[i] = []
+                    new_node_types[i] = BaseDiscrete
+            else:
+                new_node_types[i] = BaseDiscrete
+        if states:
             new_node_kwargs = [
-                dict(prob_table=table, categories=category)
-                for table, category in zip(tables, categories)
+                dict(prob_table=table, states=state)
+                for table, state in zip(tables, states)
             ]
         else:
             new_node_kwargs = [

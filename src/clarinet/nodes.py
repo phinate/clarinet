@@ -2,14 +2,14 @@ from __future__ import annotations
 
 __all__ = [
     "Node",
+    "BaseDiscrete",
     "DiscreteNode",
-    "CategoricalNode",
 ]
 
 from typing import Any, Dict, List, Tuple
 
-import jax.numpy as jnp
-from chex import Array
+import numpy as np
+import numpy.typing as npt
 from pydantic import BaseModel, validator
 
 
@@ -48,30 +48,30 @@ class Node(BaseModel):
         return cls(**node.dict(), **node_kwargs)
 
 
-class DiscreteNode(Node):
-    prob_table: Array = jnp.array([])
+class BaseDiscrete(Node):
+    prob_table: npt.NDArray[Any] = np.array([])
 
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {Array: lambda t: t.tolist()}  # for self.json()
+        json_encoders = {npt.NDArray: lambda t: t.tolist()}  # for self.json()
 
     @validator("prob_table", pre=True)
-    def to_array(cls, arr: Any) -> Array:
-        return jnp.asarray(arr)
+    def to_array(cls, arr: npt.ArrayLike) -> npt.NDArray[Any]:
+        return np.asarray(arr)
 
 
-class CategoricalNode(DiscreteNode):
-    categories: Tuple[str, ...]
+class DiscreteNode(BaseDiscrete):
+    states: Tuple[str, ...]
 
     class Config:
         allow_mutation = False
 
-    @validator("categories", pre=True)
-    def category_val(cls, v: Any) -> Tuple[str, ...]:
+    @validator("states", pre=True)
+    def state_val(cls, v: Any) -> Tuple[str, ...]:
         assert (type(v) == tuple) or (
             type(v) == list
-        ), "Type of categories needs to be a list or tuple"
-        assert len(v) >= 2, "Need at least two categories!"
+        ), "Type of states needs to be a list or tuple"
+        assert len(v) >= 2, "Need at least two states!"
 
         return tuple(v)
