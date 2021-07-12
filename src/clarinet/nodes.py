@@ -49,15 +49,15 @@ class Node(BaseModel):
 
 
 class BaseDiscrete(Node):
-    prob_table: npt.NDArray[Any] = np.array([])
+    prob_table: np.ndarray = np.array([])
 
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {npt.NDArray[Any]: lambda t: t.tolist()}  # for self.json()
+        json_encoders = {np.ndarray: lambda t: t.tolist()}  # for self.json()
 
     @validator("prob_table", pre=True)
-    def to_array(cls, arr: npt.ArrayLike) -> npt.NDArray[Any]:
+    def to_array(cls, arr: npt.ArrayLike) -> np.ndarray:
         return np.asarray(arr)
 
 

@@ -46,7 +46,7 @@ repos:
   hooks:
   - id: mypy
     files: src
-    additional_dependencies: [types-all, pydantic, "numpy>=1.20"]
+    additional_dependencies: [types-all, pydantic]
 
 - repo: https://github.com/mgedmin/check-manifest
   rev: "0.46"

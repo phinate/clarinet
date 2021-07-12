@@ -5,7 +5,7 @@ __all__ = ["BayesNet"]
 from functools import partial, singledispatchmethod
 from typing import Any, Dict, List, Optional, Sequence, no_type_check
 
-import numpy.typing as npt
+import numpy as np
 from immutables import Map
 from pydantic import BaseModel, root_validator, validator
 
@@ -23,7 +23,7 @@ class BayesNet(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
-            npt.NDArray[Any]: lambda t: t.tolist(),
+            np.ndarray: lambda t: t.tolist(),
         }
         keep_untouched = (singledispatchmethod,)
 
