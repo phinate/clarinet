@@ -43,11 +43,16 @@ class BayesNet(BaseModel):
     ) -> None:
         target = nodes[name]
         table = np.array(prob_table)
-        assert table.shape[-1] == len(target["states"])
+        num_states = len(target["states"])
+        assert (
+            table.shape[-1] == num_states
+        ), f"{name} should have a probability table with last dimension of size {num_states} ({table.shape[-1]} given)"
 
         if has_parents:
             parent_states_sizes = [len(nodes[p]["states"]) for p in target["parents"]]
-            assert set(parent_states_sizes) == set(table.shape[:-1])
+            assert set(parent_states_sizes) == set(
+                table.shape[:-1]
+            ), f"{name} has incorrect shape, needs to be (*len(parent states), ..., len(states))"
 
         # by fixing the values of the parent nodes, we define a distribution, so we need to check
         # it sums to unit probability in all cases
