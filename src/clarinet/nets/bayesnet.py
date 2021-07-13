@@ -34,6 +34,27 @@ class BayesNet(BaseModel):
     def dict_to_map(cls, dct: Dict[str, Node]) -> Map[str, Node]:
         return Map(dct)
 
+    @staticmethod
+    def _validate_prob_table(
+        nodes: Dict[str, Dict[str, Any]],
+        name: str,
+        prob_table: np.ndarray,
+        has_parents: bool,
+    ) -> None:
+        target = nodes[name]
+        table = np.array(prob_table)
+        assert table.shape[-1] == len(target["states"])
+
+        if has_parents:
+            parent_states_sizes = [len(nodes[p]["states"]) for p in target["parents"]]
+            assert set(parent_states_sizes) == set(table.shape[:-1])
+
+        # by fixing the values of the parent nodes, we define a distribution, so we need to check
+        # it sums to unit probability in all cases
+        assert np.isclose(
+            table.sum(axis=-1).prod(), 1
+        )  # to account for possible truncation -- needed?
+
     # this doesn't pick up cycles that occur when searching for node-centric cycles
     # not to worry -- I think this is done easier through the link matrix impl
     @staticmethod
@@ -127,6 +148,11 @@ class BayesNet(BaseModel):
                 )
             # check recursively to see if any child links back to this node
             cycle_check(name, children)
+        if "prob_table" in node_dict.keys() and "states" in node_dict.keys():
+            if len(node_dict["prob_table"]):
+                BayesNet._validate_prob_table(
+                    network_dict, name, node_dict["prob_table"], has_parents
+                )
 
     @staticmethod
     def _nodes_to_dict(nodes: Map[str, Node]) -> Dict[str, Dict[str, Any]]:
@@ -214,6 +240,7 @@ class BayesNet(BaseModel):
             BayesNet._validate_node(name, net_dct[name], net_dct)
         return self.copy(update={"nodes": nodes})
 
+    # TODO: add test
     @no_type_check
     @singledispatchmethod
     def add_prob_tables(
