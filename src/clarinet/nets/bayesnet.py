@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Sequence, no_type_check
 import numpy as np
 from immutables import Map
 from pydantic import BaseModel, root_validator, validator
+from scipy.sparse import csr_matrix
 
 from ..modelstring import Modelstring
 from ..nodes import BaseDiscrete, DiscreteNode, Node
@@ -15,6 +16,7 @@ from ..nodes import BaseDiscrete, DiscreteNode, Node
 
 class BayesNet(BaseModel):
     nodes: Map[str, Node]
+    link_matrix: csr_matrix
     modelstring: Modelstring = Modelstring("")
 
     # for pydantic
@@ -24,7 +26,9 @@ class BayesNet(BaseModel):
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
             np.ndarray: lambda t: t.tolist(),
+            csr_matrix: lambda t: None,
         }
+        fields = {"link_matrix": {"exclude": True}}
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:
@@ -185,6 +189,22 @@ class BayesNet(BaseModel):
                 parents = node.parents
                 values["modelstring"] += f"[{node.name}"
                 values["modelstring"] += f"|{':'.join(parents)}]" if parents else "]"
+        return values
+
+    @root_validator(skip_on_failure=True, pre=True)
+    def init_link_matrix(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        nodes = values["nodes"].values()
+
+        ordering = {node.name: i for i, node in enumerate(nodes)}
+
+        m = csr_matrix((len(ordering), len(ordering)), dtype=int)
+
+        for i, node in enumerate(nodes):
+            for parent in node.parents:
+                m[ordering[parent], i] = 1
+
+        values["link_matrix"] = m
+
         return values
 
     @classmethod
