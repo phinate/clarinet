@@ -53,7 +53,7 @@ class BayesNet(BaseModel):
         # it sums to unit probability in all cases
         assert np.isclose(
             table.sum(axis=-1).prod(), 1
-        )  # to account for possible truncation -- needed?
+        ), f"Probability over states of node'{name}' doesn't sum to 1!"  # to account for possible truncation -- needed?
 
     # this doesn't pick up cycles that occur when searching for node-centric cycles
     # not to worry -- I think this is done easier through the link matrix impl
