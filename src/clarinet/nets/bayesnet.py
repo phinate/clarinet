@@ -17,6 +17,7 @@ from ..nodes import BaseDiscrete, DiscreteNode, Node
 class BayesNet(BaseModel):
     nodes: Map[str, Node]
     link_matrix: csr_matrix
+    link_ordering = Map[str, int]
     modelstring: Modelstring = Modelstring("")
 
     # for pydantic
@@ -204,6 +205,7 @@ class BayesNet(BaseModel):
                 m[ordering[parent], i] = 1
 
         values["link_matrix"] = m
+        values["link_ordering"] = Map(ordering)
 
         return values
 
