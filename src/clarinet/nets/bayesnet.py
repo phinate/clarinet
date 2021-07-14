@@ -202,6 +202,7 @@ class BayesNet(BaseModel):
 
         for i, node in enumerate(nodes):
             for parent in node.parents:
+                assert parent in ordering.keys(), f"{parent} is not declared as a node!"
                 m[ordering[parent], i] = 1
 
         values["link_matrix"] = m
