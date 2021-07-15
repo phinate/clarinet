@@ -13,7 +13,7 @@ from pydantic import BaseModel, root_validator, validator
 from scipy.sparse import csr_matrix
 
 from ..modelstring import Modelstring
-from ..nodes import BaseDiscrete, DiscreteNode, Node
+from ..nodes import DiscreteNode, Node
 
 
 class BayesNet(BaseModel):
@@ -28,7 +28,6 @@ class BayesNet(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
-            np.ndarray: lambda t: t.tolist(),
             csr_matrix: lambda t: None,
         }
         fields = {"link_matrix": {"exclude": True}}
@@ -42,29 +41,69 @@ class BayesNet(BaseModel):
         return Map(dct)
 
     @staticmethod
+    def _convert_prob_table(
+        node_dict: Dict[str, Any], network_dict: Dict[str, Dict[str, Any]]
+    ) -> xr.DataArray:
+        if isinstance(node_dict["prob_table"], xr.DataArray):
+            return node_dict["prob_table"]
+        elif isinstance(node_dict["prob_table"], np.ndarray) or isinstance(
+            node_dict["prob_table"], list
+        ):
+            coords = {
+                n: dict(dims=[n], data=[state for state in network_dict[n]["states"]])
+                for n in node_dict["parents"]
+            }
+            coords[node_dict["name"]] = dict(
+                dims=[node_dict["name"]],
+                data=["prob(" + state + ")" for state in node_dict["states"]],
+            )
+
+            xr_dict = {
+                "coords": coords,
+                "dims": list(coords.keys()),
+                "name": node_dict["name"],
+                "data": np.array(node_dict["prob_table"]),
+            }
+            table = xr.DataArray.from_dict(xr_dict)
+        else:
+            table = xr.DataArray.from_dict(node_dict["prob_table"])
+        return table
+
+    @staticmethod
     def _validate_prob_table(
         nodes: Dict[str, Dict[str, Any]],
         name: str,
-        prob_table: np.ndarray | xr.DataArray,
+        node_dict: Dict[str, Any],
         has_parents: bool,
     ) -> None:
-        target = nodes[name]
-        num_states = len(target["states"])
+        if isinstance(node_dict["prob_table"], dict):
+            table = xr.DataArray.from_dict(node_dict["prob_table"])
+        else:
+            table = np.array(node_dict["prob_table"])
+
+        if isinstance(table, xr.DataArray):
+            # check dim names
+            assert tuple(table.dims) == tuple([*node_dict["states"], name])
+
+        num_states = len(node_dict["states"])
         assert (
-            prob_table.shape[-1] == num_states
-        ), f"{name} should have a probability table with last dimension of size {num_states} ({prob_table.shape[-1]} given)"
+            table.shape[-1] == num_states
+        ), f"{name} should have a probability table with last dimension of size {num_states} ({table.shape[-1]} given)"
 
         if has_parents:
-            parent_states_sizes = [len(nodes[p]["states"]) for p in target["parents"]]
+            parent_states_sizes = [
+                len(nodes[p]["states"]) for p in node_dict["parents"]
+            ]
             assert set(parent_states_sizes) == set(
-                prob_table.shape[:-1]
+                table.shape[:-1]
             ), f"{name} has incorrect shape, needs to be (*len(parent states), ..., len(states))"
 
         # by fixing the values of the parent nodes, we define a distribution, so we need to check
         # it sums to unit probability in all cases
+        psum = table.sum(axis=-1).prod()
         assert np.isclose(
-            prob_table.sum(axis=-1).prod(), 1
-        ), f"Probability over states of node'{name}' doesn't sum to 1!"  # to account for possible truncation -- needed?
+            psum, 1
+        ), f"Probability over states of node '{name}' doesn't sum to 1! (sums to {psum})\n {node_dict}"  # to account for possible truncation -- needed?
 
     # this doesn't pick up cycles that occur when searching for node-centric cycles
     # not to worry -- I think this is done easier through the link matrix impl
@@ -90,7 +129,6 @@ class BayesNet(BaseModel):
     def _validate_node(
         name: str, node_dict: Dict[str, Any], network_dict: Dict[str, Dict[str, Any]]
     ) -> None:
-
         cycle_check = partial(
             BayesNet._recursive_cycle_check, network_dict=network_dict
         )
@@ -162,7 +200,7 @@ class BayesNet(BaseModel):
         if "prob_table" in node_dict.keys() and "states" in node_dict.keys():
             if len(node_dict["prob_table"]):
                 BayesNet._validate_prob_table(
-                    network_dict, name, node_dict["prob_table"], has_parents
+                    network_dict, name, node_dict, has_parents
                 )
 
     @staticmethod
@@ -223,10 +261,11 @@ class BayesNet(BaseModel):
             if "name" not in node_dict.keys():
                 node_dict["name"] = name
             # special casing
-            if "states" in node_dict.keys():
+            if "prob_table" in node_dict.keys():
+                node_dict["prob_table"] = cls._convert_prob_table(
+                    node_dict, network_dict
+                )
                 nodes[name] = DiscreteNode(**node_dict)
-            elif "prob_table" in node_dict.keys():
-                nodes[name] = BaseDiscrete(**node_dict)
             else:
                 nodes[name] = Node(**node_dict)
             # display_text = node.display_text or name  # TODO daft
@@ -326,9 +365,19 @@ class BayesNet(BaseModel):
         nodes = dict(self.nodes)
         for i, name in enumerate(names):
             nodes[name] = new_node_types[i].from_node(nodes[name], **new_node_kwargs[i])
+
         net_dct = BayesNet._nodes_to_dict(Map(nodes))
+
         for name in names:
             BayesNet._validate_node(name, net_dct[name], net_dct)
+            if "prob_table" in net_dct[name].keys():
+                nodes[name] = nodes[name].copy(
+                    update={
+                        "prob_table": BayesNet._convert_prob_table(
+                            net_dct[name], net_dct
+                        )
+                    }
+                )
         return self.copy(update={"nodes": nodes})
 
     # TODO: add test
@@ -348,7 +397,7 @@ class BayesNet(BaseModel):
         self,
         names: str,
         tables: Sequence[Any],
-        states: Optional[Sequence[Any]] = None,
+        states: Sequence[Any],
     ):
         new_node_types: List[type[Node]] = []
 
@@ -359,7 +408,7 @@ class BayesNet(BaseModel):
             new_node_types.append(DiscreteNode)
             states = self.nodes[names].states
         else:
-            new_node_types.append(BaseDiscrete)
+            new_node_types.append(DiscreteNode)
         if states:
             new_node_kwargs = [dict(prob_table=tables, states=states)]
         else:
@@ -378,7 +427,7 @@ class BayesNet(BaseModel):
         self,
         names: list,
         tables: Sequence[Any],
-        states: Optional[Sequence[Any]] = None,
+        states: Sequence[Any],
     ):
         new_node_types: List[Any] = [None] * len(names)
         if states:
@@ -396,9 +445,9 @@ class BayesNet(BaseModel):
                     new_node_types[i] = DiscreteNode
                 else:
                     new_states[i] = []
-                    new_node_types[i] = BaseDiscrete
+                    new_node_types[i] = DiscreteNode
             else:
-                new_node_types[i] = BaseDiscrete
+                new_node_types[i] = DiscreteNode
         if states:
             new_node_kwargs = [
                 dict(prob_table=table, states=state)
