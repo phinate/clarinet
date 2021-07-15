@@ -45,26 +45,25 @@ class BayesNet(BaseModel):
     def _validate_prob_table(
         nodes: Dict[str, Dict[str, Any]],
         name: str,
-        prob_table: np.ndarray,
+        prob_table: np.ndarray | xr.DataArray,
         has_parents: bool,
     ) -> None:
         target = nodes[name]
-        table = np.array(prob_table)
         num_states = len(target["states"])
         assert (
-            table.shape[-1] == num_states
-        ), f"{name} should have a probability table with last dimension of size {num_states} ({table.shape[-1]} given)"
+            prob_table.shape[-1] == num_states
+        ), f"{name} should have a probability table with last dimension of size {num_states} ({prob_table.shape[-1]} given)"
 
         if has_parents:
             parent_states_sizes = [len(nodes[p]["states"]) for p in target["parents"]]
             assert set(parent_states_sizes) == set(
-                table.shape[:-1]
+                prob_table.shape[:-1]
             ), f"{name} has incorrect shape, needs to be (*len(parent states), ..., len(states))"
 
         # by fixing the values of the parent nodes, we define a distribution, so we need to check
         # it sums to unit probability in all cases
         assert np.isclose(
-            table.sum(axis=-1).prod(), 1
+            prob_table.sum(axis=-1).prod(), 1
         ), f"Probability over states of node'{name}' doesn't sum to 1!"  # to account for possible truncation -- needed?
 
     # this doesn't pick up cycles that occur when searching for node-centric cycles
