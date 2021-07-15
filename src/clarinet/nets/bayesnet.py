@@ -2,10 +2,12 @@ from __future__ import annotations
 
 __all__ = ["BayesNet"]
 
+import json
 from functools import partial, singledispatchmethod
 from typing import Any, Dict, List, Optional, Sequence, no_type_check
 
 import numpy as np
+import xarray as xr
 from immutables import Map
 from pydantic import BaseModel, root_validator, validator
 from scipy.sparse import csr_matrix
@@ -33,7 +35,7 @@ class BayesNet(BaseModel):
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:
-        return self.nodes[item]
+        return self.nodes[item]  # type: ignore # "returning Any when declared to return Node"?
 
     @validator("nodes", pre=True)
     def dict_to_map(cls, dct: Dict[str, Node]) -> Map[str, Node]:
@@ -234,6 +236,68 @@ class BayesNet(BaseModel):
     @classmethod
     def from_modelstring(cls, modelstring: str) -> BayesNet:
         return cls.from_dict(Modelstring.to_dict(modelstring), modelstring=modelstring)
+
+    @classmethod
+    def from_hbnet_dict(cls, hbnet_dict: Dict[str, Any]) -> BayesNet:
+
+        node_dict = {
+            name: dict(
+                name=name,
+                states=states,
+                parents=[],
+                children=[],
+                prob_table=[],
+            )
+            for name, states in zip(hbnet_dict["nodes"], hbnet_dict["stateNames"])
+        }
+
+        for link in hbnet_dict["linkList"]:
+            node_dict[link["Child"]]["parents"].append(link["Parent"])
+            node_dict[link["Parent"]]["children"].append(link["Child"])
+
+        for i, cpt in enumerate(hbnet_dict["CPTs"]):
+            node = list(node_dict.values())[i]
+            coords = {
+                n: dict(dims=[n], data=[state for state in node_dict[n]["states"]])
+                for n in node["parents"]
+            }
+            coords[node["name"]] = dict(
+                dims=[node["name"]],
+                data=["prob(" + state + ")" for state in node["states"]],
+            )
+
+            data_shape = [len(v["data"]) for v in coords.values()]
+
+            xr_dict = {
+                "coords": coords,
+                "dims": list(coords.keys()),
+                "name": node["name"],
+                "data": np.empty(data_shape),
+            }
+
+            xr_table = xr.DataArray.from_dict(xr_dict)
+
+            for dct in cpt:
+                dims = []
+                found_number = False
+                for key, value in dct.items():
+                    if isinstance(value, float) or isinstance(value, int):
+                        if not found_number:
+                            dims.append("prob(" + key + ")")
+                            found_number = True
+                        else:
+                            dims[-1] = "prob(" + key + ")"
+                        xr_table.loc[tuple(dims)] = value
+                    else:
+                        dims.append(value)
+            node["prob_table"] = xr_table
+
+        return cls.from_dict(node_dict)
+
+    @classmethod
+    def from_hbnet(cls, file_path: str) -> BayesNet:
+        with open(file_path) as f:
+            return cls.from_hbnet_dict(json.load(f))
 
     @singledispatchmethod
     def add_node(self, node):  # type: ignore
