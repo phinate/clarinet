@@ -1,0 +1,281 @@
+{
+    "name": "asia",
+    "nodes": [
+        "VisitAsia",
+        "Tubercolosis",
+        "Smoking",
+        "Cancer",
+        "TbOrCa",
+        "XRay",
+        "Dyspnea",
+        "Bronchitis"
+    ],
+    "stateNames": [
+        [
+            "visit",
+            "no_visit"
+        ],
+        [
+            "present",
+            "absent"
+        ],
+        [
+            "yes",
+            "no"
+        ],
+        [
+            "yes",
+            "no"
+        ],
+        [
+            "yes",
+            "no"
+        ],
+        [
+            "abnormal",
+            "normal"
+        ],
+        [
+            "yes",
+            "no"
+        ],
+        [
+            "yes",
+            "no"
+        ]
+    ],
+    "linkList": [
+        {
+            "Parent": "VisitAsia",
+            "Child": "Tubercolosis"
+        },
+        {
+            "Parent": "Smoking",
+            "Child": "Cancer"
+        },
+        {
+            "Parent": "Tubercolosis",
+            "Child": "TbOrCa"
+        },
+        {
+            "Parent": "Cancer",
+            "Child": "TbOrCa"
+        },
+        {
+            "Parent": "TbOrCa",
+            "Child": "XRay"
+        },
+        {
+            "Parent": "TbOrCa",
+            "Child": "Dyspnea"
+        },
+        {
+            "Parent": "Bronchitis",
+            "Child": "Dyspnea"
+        },
+        {
+            "Parent": "Smoking",
+            "Child": "Bronchitis"
+        }
+    ],
+    "CPTs": [
+        [
+            {
+                "visit": 0.01,
+                "no_visit": 0.99
+            }
+        ],
+        [
+            {
+                "VisitAsia": "visit",
+                "present": 0.05,
+                "absent": 0.95
+            },
+            {
+                "VisitAsia": "no_visit",
+                "present": 0.01,
+                "absent": 0.99
+            }
+        ],
+        [
+            {
+                "yes": 0.5,
+                "no": 0.5
+            }
+        ],
+        [
+            {
+                "Smoking": "yes",
+                "yes": 0.1,
+                "no": 0.9
+            },
+            {
+                "Smoking": "no",
+                "yes": 0.01,
+                "no": 0.99
+            }
+        ],
+        [
+            {
+                "Tubercolosis": "present",
+                "Cancer": "yes",
+                "yes": 1,
+                "no": 0
+            },
+            {
+                "Tubercolosis": "present",
+                "Cancer": "no",
+                "yes": 1,
+                "no": 0
+            },
+            {
+                "Tubercolosis": "absent",
+                "Cancer": "yes",
+                "yes": 1,
+                "no": 0
+            },
+            {
+                "Tubercolosis": "absent",
+                "Cancer": "no",
+                "yes": 0,
+                "no": 1
+            }
+        ],
+        [
+            {
+                "TbOrCa": "yes",
+                "abnormal": 0.98,
+                "normal": 0.02
+            },
+            {
+                "TbOrCa": "no",
+                "abnormal": 0.05,
+                "normal": 0.95
+            }
+        ],
+        [
+            {
+                "TbOrCa": "yes",
+                "Bronchitis": "yes",
+                "yes": 0.9,
+                "no": 0.1
+            },
+            {
+                "TbOrCa": "yes",
+                "Bronchitis": "no",
+                "yes": 0.7,
+                "no": 0.3
+            },
+            {
+               "TbOrCa": "no",
+                "Bronchitis": "yes",
+                "yes": 0.8,
+                "no": 0.2
+            },
+            {
+                "TbOrCa": "no",
+                "Bronchitis": "no",
+                "yes": 0.1,
+                "no": 0.9
+            }
+        ],
+        [
+            {
+                "Smoking": "yes",
+                "yes": 0.6,
+                "no": 0.4
+            },
+            {
+                "Smoking": "no",
+                "yes": 0.3,
+                "no": 0.7
+            }
+        ]
+    ],
+    "evidence": {
+        "VisitAsia": 1
+    },
+    "comp": true,
+    "autoUpdate": true,
+    "Attribs": {
+        "__counter__": [
+            8
+        ],
+        "__names__": [
+            {
+                "names": "n1",
+                "titles": "VisitAsia"
+            },
+            {
+                "names": "n2",
+                "titles": "Tubercolosis"
+            },
+            {
+                "names": "n3",
+                "titles": "Smoking"
+            },
+            {
+                "names": "n4",
+                "titles": "Cancer"
+            },
+            {
+                "names": "n5",
+                "titles": "TbOrCa"
+            },
+            {
+                "names": "n6",
+                "titles": "XRay"
+            },
+            {
+                "names": "n7",
+                "titles": "Dyspnea"
+            },
+            {
+                "names": "n8",
+                "titles": "Bronchitis"
+            }
+        ],
+        "NodeTitles": [
+            "VisitAsia",
+            "Tubercolosis",
+            "Smoking",
+            "Cancer",
+            "TbOrCa",
+            "XRay",
+            "Dyspnea",
+            "Bronchitis"
+        ],
+        "Title.n1": [
+            "visit",
+            "no_visit"
+        ],
+        "Title.n2": [
+            "present",
+            "absent"
+        ],
+        "Title.n3": [
+            "yes",
+            "no"
+        ],
+        "Title.n4": [
+            "yes",
+            "no"
+        ],
+        "Title.n5": [
+            "yes",
+            "no"
+        ],
+        "Title.n6": [
+            "abnormal",
+            "normal"
+        ],
+        "Title.n7": [
+            "yes",
+            "no"
+        ],
+        "Title.n8": [
+            "yes",
+            "no"
+        ]
+    }
+}

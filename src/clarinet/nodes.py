@@ -2,14 +2,12 @@ from __future__ import annotations
 
 __all__ = [
     "Node",
-    "BaseDiscrete",
     "DiscreteNode",
 ]
 
 from typing import Any, Dict, List, Tuple
 
-import numpy as np
-import numpy.typing as npt
+import xarray as xr
 from pydantic import BaseModel, validator
 
 
@@ -48,24 +46,14 @@ class Node(BaseModel):
         return cls(**node.dict(), **node_kwargs)
 
 
-class BaseDiscrete(Node):
-    prob_table: np.ndarray = np.array([])
+class DiscreteNode(Node):
+    states: Tuple[str, ...]
+    prob_table: Any
 
     class Config:
         allow_mutation = False
         arbitrary_types_allowed = True
-        json_encoders = {np.ndarray: lambda t: t.tolist()}  # for self.json()
-
-    @validator("prob_table", pre=True)
-    def to_array(cls, arr: npt.ArrayLike) -> np.ndarray:
-        return np.asarray(arr)
-
-
-class DiscreteNode(BaseDiscrete):
-    states: Tuple[str, ...]
-
-    class Config:
-        allow_mutation = False
+        json_encoders = {xr.DataArray: lambda t: t.to_dict()}  # for self.json()
 
     @validator("states", pre=True)
     def state_val(cls, v: Any) -> Tuple[str, ...]:

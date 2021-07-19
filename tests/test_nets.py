@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from clarinet import BaseDiscrete, BayesNet, DiscreteNode, Node
+from clarinet import BayesNet, DiscreteNode, Node
 
 # make sure to use every node type in every example where possible
 # add prob tables later
@@ -32,11 +32,17 @@ normal_dict = {
 
 
 more_complex_dict: dict[str, dict[str, Any]] = {
-    "O": {"name": "O", "parents": ["E"], "children": ["T"]},
+    "O": {"name": "O", "parents": ["A"], "children": ["T"]},
     "S": {"name": "S", "parents": [], "children": ["E"]},
     "R": {"name": "R", "parents": ["E"], "children": ["T"]},
-    "A": {"name": "A", "parents": [], "children": ["E"], "prob_table": [0.1, 0.9]},
-    "E": {"name": "E", "parents": ["A", "S"], "children": ["O", "R"]},
+    "A": {
+        "name": "A",
+        "parents": [],
+        "children": ["E", "O"],
+        "prob_table": [0.1, 0.9],
+        "states": ["y", "n"],
+    },
+    "E": {"name": "E", "parents": ["A", "S"], "children": ["R"]},
     "T": {"name": "T", "parents": ["O", "R"], "children": []},
 }
 
@@ -195,16 +201,6 @@ def test_from_modelstring_fail_no_node():
     (
         pytest.param(Node, dict(name="B", parents=["A"]), id="test adding child"),
         pytest.param(Node, dict(name="B", children=["A"]), id="test adding parent"),
-        pytest.param(
-            BaseDiscrete,
-            dict(name="B", parents=["A"], prob_table=[0.1, 0.9]),
-            id="discrete case",
-        ),
-        pytest.param(
-            DiscreteNode,
-            dict(name="B", parents=["A"], states=["yes", "no"]),
-            id="categorical case",
-        ),
     ),
 )
 def test_add_node(node_type, kwargs):
@@ -214,20 +210,45 @@ def test_add_node(node_type, kwargs):
     assert net[node.name].dict() == node.dict()
 
 
+@pytest.mark.parametrize(
+    ("node_type", "kwargs"),
+    (
+        pytest.param(
+            DiscreteNode,
+            dict(
+                name="B",
+                parents=["A"],
+                states=["yes", "no"],
+                prob_table=[[0.9, 0.1], [0.9, 0.1]],
+            ),
+            id="categorical case",
+        ),
+    ),
+)
+def test_add_discrete_node(node_type, kwargs):
+    node = node_type(**kwargs)
+    net = BayesNet.from_modelstring("[A]")
+    net = net.add_prob_tables("A", [0.2, 0.8], ["y", "n"])
+    net = net.add_node(node)
+    assert net[node.name].dict() == node.dict()
+
+
+# should fail when adding discrete node that tries to access parent info that doesn't exist (states)
+
+
 def test_modify_nodes():
     net = BayesNet.from_dict(more_complex_dict)
 
     net = net.convert_nodes(
-        names=["O", "S"],
-        new_node_types=[DiscreteNode, BaseDiscrete],
+        names=["O"],
+        new_node_types=[DiscreteNode],
         new_node_kwargs=[
-            dict(states=["A", "B"]),
-            dict(prob_table=[0.9, 0.1]),
+            dict(states=["A", "B"], prob_table=[[0.9, 0.1], [0.9, 0.1]]),
         ],
     )
 
     assert net["O"].states == ("A", "B")
-    assert np.allclose(net["S"].prob_table, np.array([0.9, 0.1]))
+    assert np.allclose(net["O"].prob_table, np.array([[0.9, 0.1], [0.9, 0.1]]))
 
 
 def test_modify_nodes_validation_error():
