@@ -4,7 +4,7 @@ __all__ = ["BayesNet"]
 
 import json
 from functools import partial, singledispatchmethod
-from typing import Any, Dict, List, Optional, Sequence, no_type_check
+from typing import Any, Dict, List, Sequence, no_type_check
 
 import numpy as np
 import xarray as xr
@@ -28,6 +28,7 @@ class BayesNet(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {
             Map: lambda t: {name: node for name, node in t.items()},
+            xr.DataArray: lambda t: t.to_dict(),
             csr_matrix: lambda t: None,
         }
         fields = {"link_matrix": {"exclude": True}}
@@ -76,6 +77,7 @@ class BayesNet(BaseModel):
         node_dict: Dict[str, Any],
         has_parents: bool,
     ) -> None:
+        assert "states" in node_dict.keys(), f"Need to declare state names for {name}"
         if isinstance(node_dict["prob_table"], dict):
             table = xr.DataArray.from_dict(node_dict["prob_table"])
         else:
@@ -91,6 +93,9 @@ class BayesNet(BaseModel):
         ), f"{name} should have a probability table with last dimension of size {num_states} ({table.shape[-1]} given)"
 
         if has_parents:
+            assert all(
+                ["states" in nodes[p].keys() for p in node_dict["parents"]]
+            ), f"Parents of {name} need to have states declared as a variable"
             parent_states_sizes = [
                 len(nodes[p]["states"]) for p in node_dict["parents"]
             ]
@@ -262,6 +267,9 @@ class BayesNet(BaseModel):
                 node_dict["name"] = name
             # special casing
             if "prob_table" in node_dict.keys():
+                assert (
+                    "states" in node_dict.keys()
+                ), f"Need to declare state names for {name}"
                 node_dict["prob_table"] = cls._convert_prob_table(
                     node_dict, network_dict
                 )
@@ -387,7 +395,7 @@ class BayesNet(BaseModel):
         self,
         names,
         tables: Sequence[Any],
-        states: Optional[Sequence[Any]] = None,
+        states: Sequence[Any],
     ):
         pass
 

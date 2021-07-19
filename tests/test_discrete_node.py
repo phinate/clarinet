@@ -1,41 +1,34 @@
-import numpy as np
 import pytest
+from pydantic import ValidationError
 
-from clarinet import BaseDiscrete, Node
+from clarinet import DiscreteNode
 
 name = "test_name"
+prob_table = [[0.3, 0.7], [0.7, 0.3]]
 
 
-@pytest.mark.parametrize(
-    ("prob_table", "expected_prob_table"),
-    (
-        pytest.param([], np.array([]), id="empty list"),
-        pytest.param(
-            [[0.3, 0.7], [0.7, 0.3]],
-            np.array([[0.3, 0.7], [0.7, 0.3]]),
-            id="non-empty list",
-        ),
-        pytest.param(
-            np.array([[0.3, 0.7], [0.7, 0.3]]),
-            np.array([[0.3, 0.7], [0.7, 0.3]]),
-            id="non-empty array",
-        ),
-    ),
-)
-def test_basic_functionality(prob_table, expected_prob_table):
+def test_basic_functionality():
+    states = ["c1", "c2"]
     parents, children = ["A", "B"], ["C", "D"]
-    x = BaseDiscrete(
-        name=name, parents=parents, children=children, prob_table=prob_table
+    x = DiscreteNode(
+        name=name,
+        parents=parents,
+        children=children,
+        prob_table=prob_table,
+        states=states,
     )
-    assert np.allclose(x.dict()["prob_table"], expected_prob_table)
+    assert x.states == ("c1", "c2")
     x.json()
 
 
-def test_prob_table():
-    pass  # for when shape checks and sum(probs)=1 checks exist
-
-
-def test_from_node():
-    n = Node(name=name, parents=["F"])  # arbitrary
-    prob_table = np.array([[0.3, 0.7], [0.7, 0.3]])
-    BaseDiscrete.from_node(n, prob_table=prob_table)
+@pytest.mark.parametrize(
+    "states",
+    (
+        pytest.param([], id="empty"),
+        pytest.param(["e"], id="only one state"),
+        pytest.param("fagfdsgfd", id="string"),
+    ),
+)
+def test_states_validerror(states):
+    with pytest.raises(ValidationError):
+        DiscreteNode(name=name, states=states)
