@@ -139,11 +139,10 @@ missing_dict = {
 )
 def test_net_instantiation(params, expected):
     x = BayesNet.from_dict(params)
-    nodes = json.loads(x.json())["nodes"]
+    nodes = json.loads(x.to_json())["nodes"]
     for v in nodes.values():
         v.pop("prob_table", None)
     assert set(nodes) == set(expected)
-    x.json()
 
 
 @pytest.mark.parametrize(
@@ -174,7 +173,7 @@ def test_net_instantiation_failure_cases(params):
 )
 def test_from_modelstring(string, expected):
     x = BayesNet.from_modelstring(string)
-    nodes = json.loads(x.json())["nodes"]
+    nodes = json.loads(x.to_json())["nodes"]
     for v in nodes.values():
         v.pop("prob_table", None)
     assert set(nodes) == set(expected)
