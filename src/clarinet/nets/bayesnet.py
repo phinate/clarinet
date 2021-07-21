@@ -4,8 +4,10 @@ __all__ = ["BayesNet"]
 
 import json
 from functools import partial, singledispatchmethod
-from typing import Any, Dict, List, Sequence, no_type_check
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, no_type_check
 
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import xarray as xr
 from immutables import Map
@@ -19,8 +21,10 @@ from ..nodes import DiscreteNode, Node
 class BayesNet(BaseModel):
     nodes: Map[str, Node]
     link_matrix: csr_matrix
-    link_ordering: Map[str, int]
+    graph: nx.Graph
+    node_order: Dict[str, int]
     modelstring: Modelstring = Modelstring("")
+    _cached_jt: Optional[nx.Graph] = None
 
     # for pydantic
     class Config:
@@ -30,12 +34,40 @@ class BayesNet(BaseModel):
             Map: lambda t: {name: node for name, node in t.items()},
             xr.DataArray: lambda t: t.to_dict(),
             csr_matrix: lambda t: None,
+            nx.Graph: lambda t: None,
         }
-        fields = {"link_matrix": {"exclude": True}}
         keep_untouched = (singledispatchmethod,)
 
     def __getitem__(self, item: str) -> Node:
         return self.nodes[item]  # type: ignore # "returning Any when declared to return Node"?
+
+    def draw(self, **nx_kwargs: Dict[str, Any]) -> None:
+        ax = plt.gca()
+        ax.margins(0.20)
+        nx.draw(self.graph, with_labels=True, **nx_kwargs)
+
+    def to_json(self) -> str:
+        return self.json(exclude={"link_matrix", "graph", "_cached_jt", "node_order"})
+
+    def junction_tree(
+        self, cache: bool = False, draw: bool = False
+    ) -> Union[nx.Graph, Tuple[nx.Graph, BayesNet]]:
+        if not self._cached_jt:
+            jt = nx.junction_tree(self.graph)
+            if draw:
+                ax = plt.gca()
+                ax.margins(0.20)
+                nx.draw(jt, with_labels=True)
+            if cache:
+                return jt, self.copy(update={"_cached_jt": jt})
+            else:
+                return jt
+        else:
+            if draw:
+                ax = plt.gca()
+                ax.margins(0.20)
+                nx.draw(self._cached_jt, with_labels=True)
+            return self._cached_jt
 
     @validator("nodes", pre=True)
     def dict_to_map(cls, dct: Dict[str, Node]) -> Map[str, Node]:
@@ -237,21 +269,25 @@ class BayesNet(BaseModel):
         return values
 
     @root_validator(skip_on_failure=True, pre=True)
-    def init_link_matrix(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def init_link_matrix_and_nx(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         nodes = values["nodes"].values()
 
         ordering = {node.name: i for i, node in enumerate(nodes)}
 
-        m = csr_matrix((len(ordering), len(ordering)), dtype=int)
+        m = np.zeros((len(ordering), len(ordering)), dtype=int)
 
         for i, node in enumerate(nodes):
             for parent in node.parents:
                 assert parent in ordering.keys(), f"{parent} is not declared as a node!"
                 m[ordering[parent], i] = 1
 
-        values["link_matrix"] = m
-        values["link_ordering"] = Map(ordering)
+        links = csr_matrix(m)
+        values["link_matrix"] = links
+        values["node_order"] = ordering
 
+        inv_ordering = {v: k for k, v in ordering.items()}
+        netx = nx.from_scipy_sparse_matrix(links, create_using=nx.DiGraph)
+        values["graph"] = nx.relabel_nodes(netx, inv_ordering)
         return values
 
     @classmethod
@@ -276,8 +312,16 @@ class BayesNet(BaseModel):
                 nodes[name] = DiscreteNode(**node_dict)
             else:
                 nodes[name] = Node(**node_dict)
-            # display_text = node.display_text or name  # TODO daft
         return cls(nodes=nodes, modelstring=modelstring)
+
+    @classmethod
+    def from_json(cls, json_string: str) -> BayesNet:
+        return cls.from_dict(json.loads(json_string))
+
+    @classmethod
+    def from_json_file(cls, file_path: str) -> BayesNet:
+        with open(file_path) as f:
+            return cls.from_dict(json.load(f))
 
     @classmethod
     def from_modelstring(cls, modelstring: str) -> BayesNet:
@@ -346,12 +390,12 @@ class BayesNet(BaseModel):
             return cls.from_hbnet_dict(json.load(f))
 
     @singledispatchmethod
-    def add_node(self, node):  # type: ignore
+    def add_node(self, node, **node_kwargs):  # type: ignore
         raise NotImplementedError(f"Type '{type(node)}' of node not recognised")
 
     # functools can't parse the return annotation here? ignore type for now
     @add_node.register
-    def _(self, node: Node):  # type: ignore
+    def _(self, node: Node, **node_kwargs):  # type: ignore
         node_dct = dict(self.nodes)
         name = node.name
         node_dct[name] = node
@@ -362,7 +406,49 @@ class BayesNet(BaseModel):
             node_dct[parent] = node_dct[parent].add_children([name])
         dct = BayesNet._nodes_to_dict(Map(node_dct))
         BayesNet._validate_node(name, node.dict(), network_dict=dct)
-        return self.copy(update={"nodes": node_dct})
+
+        # plumbing for internal vars after passing validation
+
+        # update modelstring
+        new_modelstring = self.modelstring + f"[{node.name}"
+        new_modelstring += (
+            f"|{':'.join(node.parents)}]" if not len(node.parents) else "]"
+        )
+
+        links = self.link_matrix.toarray()
+        # looks involved, but it just adds a new row/column of zeros for the new node
+        new_links = np.hstack(
+            (
+                np.vstack((links, np.zeros(len(links)))),
+                np.zeros((1, len(links) + 1)).T,
+            )
+        )
+        for parent in node.parents:
+            new_links[self.node_order[parent], -1] = 1
+
+        new_order = {**self.node_order, node.name: len(links)}
+        inv_ordering = {v: k for k, v in new_order.items()}
+        netx = nx.from_scipy_sparse_matrix(
+            csr_matrix(new_links), create_using=nx.DiGraph
+        )
+
+        # if problems here, just make a new object...
+        return self.copy(
+            update={
+                "nodes": node_dct,
+                "modelstring": Modelstring(new_modelstring),
+                "node_order": new_order,
+                "graph": nx.relabel_nodes(netx, inv_ordering),
+                "_cached_jt": None,
+            }
+        )
+
+    @add_node.register
+    def create_and_add(self, node: str, **node_kwargs):  # type: ignore
+        if "prob_table" in node_kwargs.keys():
+            return self.add_node(DiscreteNode(name=node, **node_kwargs))
+        else:
+            return self.add_node(Node(name=node, **node_kwargs))
 
     def convert_nodes(
         self,
