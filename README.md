@@ -22,6 +22,8 @@ Completed:
 - `BayesNet` class that wraps DAG logic 
 - stringent runtime type-checking via `pydantic`
 - graph vizualisation capability
+- on-the-fly construction of junction tree
+- probability table naming and manipulation via `xarray`
 - exporting of network structure to lightweight json format
 - network interoperability with:
   - bnlearn-style modelstrings
