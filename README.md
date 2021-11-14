@@ -13,9 +13,22 @@
 
 [![GitHub Discussion][github-discussions-badge]][github-discussions-link]
 
-Soon-to-be jax-backed probabilistic graphical model utilities!
-
+(another) Open-source probabilistic graphical model library. Designed to be easy to use and interoperable with an internally developed package at Bain and Company, Roma.
 ** Note: This project is in pre-alpha, so expect the whole thing to be one sharp edge. **
+
+## functionality roadmap:
+Completed:
+- basic DAG creation and manipulation via `Node` class
+- `BayesNet` class that wraps DAG logic 
+- stringent runtime type-checking via `pydantic`
+- graph vizualisation capability
+- exporting of network structure to lightweight json format
+- network interoperability with:
+  - bnlearn-style modelstrings
+  - HBNet json specification (Bain package)
+
+To-do:
+- inference via probabilistic programming backend (e.g. numpyro)
 
 ## usage:
 
