@@ -19,7 +19,7 @@
 ## functionality roadmap:
 Completed:
 - basic DAG creation and manipulation via `Node` class
-- `BayesNet` class that wraps DAG logic 
+- `BayesNet` class that wraps DAG logic
 - stringent runtime type-checking via `pydantic`
 - graph vizualisation capability
 - on-the-fly construction of junction tree
